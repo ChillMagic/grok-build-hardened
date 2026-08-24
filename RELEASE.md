@@ -5,10 +5,10 @@
 This is an unofficial, community-maintained build. It is not affiliated with,
 endorsed by, or supported by xAI or SpaceXAI.
 
-Each archive contains the `grok` executable plus the license, attribution,
-security-boundary, and modification documents. The executable is built from
-the tagged source only after the fail-closed source audit and offline release
-build both pass.
+Each archive contains the `grok` executable (`grok.exe` on Windows) plus the
+license, attribution, security-boundary, and modification documents. The
+executable is built from the tagged source only after the fail-closed source
+audit and offline release build both pass.
 
 This is not an offline AI client. Model requests still send the prompt and
 selected context to the configured provider. The hardening removes separate
@@ -28,3 +28,9 @@ shasum -a 256 <archive.tar.gz>
 ```
 
 Compare the result with the matching line in `SHA256SUMS`.
+
+On Windows PowerShell:
+
+```powershell
+Get-FileHash -Algorithm SHA256 <archive.zip>
+```

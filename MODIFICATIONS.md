@@ -67,4 +67,6 @@ the fork README or release branding.
 The maintenance tools configure `origin` as the only push destination and set
 the official `upstream` push URL to `DISABLED`. Public rebases use an exact
 `--force-with-lease` bound to the previously fetched `origin/main` SHA. Release
-tags are never moved or force-pushed.
+tags are never moved or force-pushed. Source auditing, offline release builds,
+runtime rejection tests, and native archive creation share one cross-platform
+Python implementation used by Windows, macOS, and Linux CI runners.

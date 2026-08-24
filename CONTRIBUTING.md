@@ -10,7 +10,7 @@ Before opening a pull request:
 1. Base the change on this repository's `main` branch.
 2. Do not merge an unreviewed upstream revision or update the approved base as
    part of an unrelated change.
-3. Run `./scripts/hardening/check.sh`.
+3. Run `python scripts/hardening/hardening.py check`.
 4. Run `cargo fmt --all -- --check` and the relevant Cargo tests/checks.
 5. Explain whether the change affects model requests, repository data,
    telemetry, remote policy/control, updates, plugins, MCP, or media tools.

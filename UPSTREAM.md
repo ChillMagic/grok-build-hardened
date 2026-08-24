@@ -15,8 +15,8 @@ git remote -v
 
 Configure or validate these local remotes idempotently with:
 
-```bash
-./scripts/hardening/setup-remotes.sh
+```text
+python scripts/hardening/hardening.py setup-remotes
 ```
 
 ## 1. Inspect upstream without changing the branch
@@ -50,9 +50,10 @@ successful compilation. `git rerere` records recurring conflict resolutions.
 
 ## 3. Audit and approve the new base
 
-Immediately after a rebase, `./scripts/hardening/check.sh` intentionally fails
-because `.hardened/upstream.env` still names the old audited commit. Do not
-weaken this check.
+Immediately after a rebase,
+`python scripts/hardening/hardening.py check` intentionally fails because
+`.hardened/upstream.env` still names the old audited commit. Do not weaken
+this check.
 
 A maintainer must inspect:
 
@@ -62,7 +63,7 @@ A maintainer must inspect:
   archive paths.
 - New configuration, environment variables, command-line flags, or server
   responses that could bypass compile-time privacy constants.
-- Platform-specific branches for both macOS and Linux.
+- Platform-specific branches for Windows, macOS, and Linux.
 - Cargo dependency/build-script changes and newly bundled executables.
 
 Only after the audit:
@@ -83,11 +84,11 @@ Only after the audit:
    modification notice.
 5. Run the verification and builds:
 
-   ```bash
-   ./scripts/hardening/check.sh
+   ```text
+   python scripts/hardening/hardening.py check
    cargo fmt --all -- --check
    cargo check --locked -p xai-grok-pager-bin
-   ./scripts/hardening/build-offline.sh
+   python scripts/hardening/hardening.py build-offline
    ```
 
 6. Commit the audit approval separately so the reviewed base change is
@@ -95,8 +96,8 @@ Only after the audit:
 
 ## 4. Tag and publish
 
-```bash
-./scripts/hardening/tag-release.sh
+```text
+python scripts/hardening/hardening.py tag-release
 git push --force-with-lease=refs/heads/main:<old-published-SHA> origin main
 git push origin v<upstream-version>-hardened[.<correction>]
 ```

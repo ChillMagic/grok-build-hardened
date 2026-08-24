@@ -37,31 +37,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Configure read-only upstream identity
-        run: ./scripts/hardening/setup-remotes.sh
+        run: python3 scripts/hardening/hardening.py setup-remotes
       - name: Validate tag and hardening invariants
         id: release
-        shell: bash
-        env:
-          REQUESTED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-        run: |
-          set -euo pipefail
-          source scripts/hardening/common.sh
-          expected_tag="$(hardening_release_tag)"
-          [[ "$REQUESTED_TAG" == "$expected_tag" ]] || {
-            printf 'Expected tag %s, received %s\n' "$expected_tag" "$REQUESTED_TAG" >&2
-            exit 1
-          }
-          [[ "$(git cat-file -t "refs/tags/$REQUESTED_TAG")" == tag ]] || {
-            printf 'Release tag must be annotated: %s\n' "$REQUESTED_TAG" >&2
-            exit 1
-          }
-          [[ "$(git rev-parse HEAD)" == "$(git rev-parse "refs/tags/$REQUESTED_TAG^{commit}")" ]] || {
-            printf 'Checked-out commit does not match tag %s\n' "$REQUESTED_TAG" >&2
-            exit 1
-          }
-          ./scripts/hardening/check.sh
-          printf 'tag=%s\n' "$REQUESTED_TAG" >>"$GITHUB_OUTPUT"
-          printf 'version=%s\n' "${REQUESTED_TAG#v}" >>"$GITHUB_OUTPUT"
+        run: >-
+          python3 scripts/hardening/hardening.py validate-release-tag
+          --tag "${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
 
   build:
     name: Build (${{ matrix.os }})
@@ -69,9 +50,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            python: python3
+          - os: macos-latest
+            python: python3
+          - os: windows-latest
+            python: python
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Check out the tagged source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -80,44 +67,28 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Configure read-only upstream identity
-        run: ./scripts/hardening/setup-remotes.sh
+        run: ${{ matrix.python }} scripts/hardening/hardening.py setup-remotes
       - name: Install build prerequisites on Linux
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler ripgrep
+        run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler
       - name: Install build prerequisites on macOS
         if: runner.os == 'macOS'
-        run: brew install protobuf ripgrep
+        run: brew install protobuf
+      - name: Install build prerequisites on Windows
+        if: runner.os == 'Windows'
+        run: choco install protoc --version 29.3.0 --no-progress --yes
       - name: Select the repository-pinned Rust toolchain
         run: rustup show
       - name: Fetch locked Rust dependencies
         run: cargo fetch --locked
       - name: Audit and build with network disabled
-        run: ./scripts/hardening/build-offline.sh
+        run: ${{ matrix.python }} scripts/hardening/hardening.py build-offline
       - name: Package binary and notices
         id: package
-        shell: bash
-        env:
-          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          set -euo pipefail
-          case "$(uname -s)" in
-            Linux) platform=linux ;;
-            Darwin) platform=macos ;;
-            *) printf 'Unsupported operating system\n' >&2; exit 1 ;;
-          esac
-          case "$(uname -m)" in
-            x86_64|amd64) architecture=x86_64 ;;
-            arm64|aarch64) architecture=aarch64 ;;
-            *) printf 'Unsupported architecture\n' >&2; exit 1 ;;
-          esac
-          package="grok-build-hardened-${RELEASE_VERSION}-${platform}-${architecture}"
-          package_dir="dist/$package"
-          mkdir -p "$package_dir/third_party"
-          install -m 0755 target/hardened/release/xai-grok-pager "$package_dir/grok"
-          install -m 0644 LICENSE THIRD-PARTY-NOTICES README.md MODIFICATIONS.md RELEASE.md "$package_dir/"
-          install -m 0644 third_party/NOTICE "$package_dir/third_party/NOTICE"
-          tar -C dist -czf "dist/$package.tar.gz" "$package"
-          printf 'archive=%s\n' "dist/$package.tar.gz" >>"$GITHUB_OUTPUT"
+        run: >-
+          ${{ matrix.python }} scripts/hardening/hardening.py package
+          --version "${{ needs.prepare.outputs.version }}"
+          --output-dir dist
       - name: Upload packaged binary
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
@@ -155,9 +126,9 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          archives=(dist/*.tar.gz)
-          [[ "${#archives[@]}" -eq 2 ]] || {
-            printf 'Expected two platform archives, found %s\n' "${#archives[@]}" >&2
+          archives=(dist/*.tar.gz dist/*.zip)
+          [[ "${#archives[@]}" -eq 3 ]] || {
+            printf 'Expected three platform archives, found %s\n' "${#archives[@]}" >&2
             exit 1
           }
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -166,7 +137,7 @@ jobs:
           fi
           (
             cd dist
-            sha256sum -- *.tar.gz >SHA256SUMS
+            sha256sum -- *.tar.gz *.zip >SHA256SUMS
           )
           gh release create "$RELEASE_TAG" \
             "${archives[@]}" dist/SHA256SUMS \

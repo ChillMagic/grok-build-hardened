@@ -42,6 +42,7 @@ Create an active branch ruleset targeting the default branch:
   - `Fail-closed source audit`
   - `Compile (ubuntu-latest)`
   - `Compile (macos-latest)`
+  - `Compile (windows-latest)`
 - Require conversation resolution.
 - Give only `ChillMagic` a bypass for the audited upstream-rebase operation.
 

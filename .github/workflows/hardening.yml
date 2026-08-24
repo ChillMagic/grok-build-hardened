@@ -29,9 +29,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Configure read-only upstream identity
-        run: ./scripts/hardening/setup-remotes.sh
+        run: python3 scripts/hardening/hardening.py setup-remotes
       - name: Verify hardening invariants
-        run: ./scripts/hardening/check.sh
+        run: python3 scripts/hardening/hardening.py check
 
   compile:
     name: Compile (${{ matrix.os }})
@@ -39,7 +39,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            python: python3
+          - os: macos-latest
+            python: python3
+          - os: windows-latest
+            python: python
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
@@ -49,13 +55,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Configure read-only upstream identity
-        run: ./scripts/hardening/setup-remotes.sh
+        run: ${{ matrix.python }} scripts/hardening/hardening.py setup-remotes
       - name: Install protobuf compiler on Linux
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler ripgrep
+        run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler
       - name: Install protobuf compiler on macOS
         if: runner.os == 'macOS'
-        run: brew install protobuf ripgrep
+        run: brew install protobuf
+      - name: Install protobuf compiler on Windows
+        if: runner.os == 'Windows'
+        run: choco install protoc --version 29.3.0 --no-progress --yes
       - name: Select the repository-pinned Rust toolchain
         run: rustup show
       - name: Check formatting

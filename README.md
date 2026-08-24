@@ -30,9 +30,9 @@ full boundary and [`SECURITY.md`](SECURITY.md) for reporting issues.
 
 ## Verify before building
 
-```bash
-./scripts/hardening/setup-remotes.sh
-./scripts/hardening/check.sh
+```text
+python scripts/hardening/hardening.py setup-remotes
+python scripts/hardening/hardening.py check
 ```
 
 The check is fail-closed. It validates the audited upstream base, the exact
@@ -42,20 +42,23 @@ license/change notices, and the fork's remote configuration.
 
 ## Build
 
-Install the Rust toolchain pinned by `rust-toolchain.toml`, `protoc`, and
-`ripgrep`. On a fresh machine, obtain the locked Rust dependencies in a clean
+Install Python 3, the Rust toolchain pinned by `rust-toolchain.toml`, and
+`protoc`. On a fresh machine, obtain the locked Rust dependencies in a clean
 directory first, then perform the reviewed build offline:
 
-```bash
+```text
 cargo fetch --locked
-./scripts/hardening/build-offline.sh
+python scripts/hardening/hardening.py build-offline
 ```
 
-The resulting binary is `target/hardened/release/xai-grok-pager`. The build
+The resulting binary is `target/hardened/release/xai-grok-pager` on macOS and
+Linux, or `target/hardened/release/xai-grok-pager.exe` on Windows. The build
 script does not install it and the binary cannot update itself.
 
-macOS and Linux use the same source hardening. CI checks both operating
-systems; release artifacts, if any, must be built separately for each target.
+Windows, macOS, and Linux use the same Python hardening implementation. CI
+checks all three operating systems; release artifacts are built separately
+for each target. Windows releases are `.zip` files containing `grok.exe`;
+macOS and Linux releases are `.tar.gz` files containing `grok`.
 
 ## Track upstream safely
 

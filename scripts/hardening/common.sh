@@ -32,7 +32,7 @@ git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1 \
 [[ -f "$HARDENING_METADATA" ]] \
     || hardening_fail "missing ${HARDENING_METADATA}"
 
-# This file is tracked by the repository and validated by check.sh.
+# This file is tracked by the repository and validated by hardening.py.
 # shellcheck disable=SC1090
 source "$HARDENING_METADATA"
 
