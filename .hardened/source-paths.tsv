@@ -1,6 +1,7 @@
 # Added by the grok-build-hardened project.
 M	Cargo.lock
 M	Cargo.toml
+M	crates/build/xai-proto-build/src/lib.rs
 M	crates/codegen/xai-file-utils/Cargo.toml
 D	crates/codegen/xai-file-utils/src/circuit_breaker_observer.rs
 D	crates/codegen/xai-file-utils/src/circuit_breaker_observer_tests.rs

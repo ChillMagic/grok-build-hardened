@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 mod debug_redact;
 pub mod find_protoc;
 
@@ -133,6 +134,14 @@ impl XaiProtoBuilder {
         includes: impl IntoIterator<Item = &'a Path>,
     ) -> anyhow::Result<()> {
         let includes = Vec::from_iter(includes);
+        let invocation_dir = std::env::current_dir().context("current directory unavailable")?;
+        let absolute_path = |path: &Path| {
+            if path.is_absolute() {
+                path.to_path_buf()
+            } else {
+                invocation_dir.join(path)
+            }
+        };
 
         if let Some(protoc) = protoc {
             println!(
@@ -143,15 +152,23 @@ impl XaiProtoBuilder {
 
         // Can only process one input file when using --dependency_out=FILE.
         for proto in protos {
+            // Keep protoc output in a temporary directory and use fixed relative
+            // output names. Unlike /dev/stdout and /dev/null, this works on
+            // Windows and leaves the dependency target easy to parse even when
+            // the temporary directory has a drive-letter prefix.
+            let output_dir = tempfile::tempdir().context("protoc tempdir unavailable")?;
+            let dependency_path = output_dir.path().join("dependencies.d");
             let mut command = Command::new(protoc.unwrap_or(Path::new("protoc")));
             command
-                .arg("--dependency_out=/dev/stdout")
-                .arg("--descriptor_set_out=/dev/null");
+                .current_dir(output_dir.path())
+                .arg("--dependency_out=dependencies.d")
+                .arg("--descriptor_set_out=descriptor.bin");
 
             // Add protoc's well-known types include directory first (if found).
             // This is needed for Bazel sandboxed builds where protoc and its
             // include files are in different locations.
             if let Some(include_dir) = protoc_include_dir {
+                let include_dir = absolute_path(include_dir);
                 command.arg(format!(
                     "-I{}",
                     include_dir.to_str().context("include path not UTF-8")?
@@ -159,10 +176,11 @@ impl XaiProtoBuilder {
             }
 
             for include in &includes {
+                let include = absolute_path(include);
                 command.arg(format!("-I{}", include.to_str().context("path not UTF-8")?));
             }
 
-            command.arg(proto);
+            command.arg(absolute_path(proto));
 
             command.stdin(Stdio::null());
             command.stderr(Stdio::inherit());
@@ -172,14 +190,14 @@ impl XaiProtoBuilder {
                 return Err(anyhow::anyhow!("protoc command failed"));
             }
 
-            let output =
-                String::from_utf8(output.stdout).context("protoc command output not UTF-8")?;
+            let output = fs::read_to_string(&dependency_path)
+                .context("protoc dependency output not readable")?;
 
             let mut lines = output.lines();
             let first_line = lines.next().context("protoc command output is empty")?;
-            let prefix = "/dev/null:";
+            let prefix = "descriptor.bin:";
             let rem = first_line.strip_prefix(prefix).with_context(|| {
-                format!("protoc command output must start with /dev/null: {output:?}")
+                format!("protoc command output must start with {prefix}: {output:?}")
             })?;
             for line in iter::once(rem).chain(lines) {
                 let line = line.trim();
@@ -187,15 +205,19 @@ impl XaiProtoBuilder {
                 // Depending on absolute paths like
                 // /Users/user/homebrew/Cellar/protobuf/29.1/include/google/protobuf/timestamp.proto
                 // is valid, but we want to have output more deterministic.
-                if line.contains("/include/google/protobuf/") {
+                if line
+                    .replace('\\', "/")
+                    .contains("/include/google/protobuf/")
+                {
                     continue;
                 }
 
-                if !fs::exists(line)? {
+                let dependency = absolute_path(Path::new(line));
+                if !fs::exists(&dependency)? {
                     return Err(anyhow::anyhow!("dependency file not found: {line}"));
                 }
 
-                println!("cargo:rerun-if-changed={line}");
+                println!("cargo:rerun-if-changed={}", dependency.display());
             }
         }
 
