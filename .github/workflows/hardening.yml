@@ -56,6 +56,8 @@ jobs:
           persist-credentials: false
       - name: Configure read-only upstream identity
         run: ${{ matrix.python }} scripts/hardening/hardening.py setup-remotes
+      - name: Verify hardening invariants on this host
+        run: ${{ matrix.python }} scripts/hardening/hardening.py check
       - name: Install protobuf compiler on Linux
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler

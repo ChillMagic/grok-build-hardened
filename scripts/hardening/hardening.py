@@ -856,7 +856,11 @@ def main(arguments: Sequence[str] | None = None) -> int:
         else:
             parser.error(f"unknown command: {args.command}")
     except HardeningError as exc:
-        print(f"HARDENING CHECK FAILED: {exc}", file=sys.stderr)
+        message = f"HARDENING CHECK FAILED: {exc}"
+        print(message, file=sys.stderr)
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            escaped = github_annotation_escape(message)
+            print(f"::error title=Hardening gate failed::{escaped}")
         return 1
     return 0
 
