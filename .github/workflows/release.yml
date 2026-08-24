@@ -118,30 +118,11 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Create checksums and GitHub Release
-        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          archives=(dist/*.tar.gz dist/*.zip)
-          [[ "${#archives[@]}" -eq 3 ]] || {
-            printf 'Expected three platform archives, found %s\n' "${#archives[@]}" >&2
-            exit 1
-          }
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            printf 'Release already exists and will not be modified: %s\n' "$RELEASE_TAG" >&2
-            exit 1
-          fi
-          (
-            cd dist
-            sha256sum -- *.tar.gz *.zip >SHA256SUMS
-          )
-          gh release create "$RELEASE_TAG" \
-            "${archives[@]}" dist/SHA256SUMS \
-            --repo "$GITHUB_REPOSITORY" \
-            --verify-tag \
-            --title "grok-build-hardened $RELEASE_VERSION" \
-            --notes-file RELEASE.md
+        run: >-
+          python3 scripts/hardening/hardening.py publish-release
+          --tag "${{ needs.prepare.outputs.tag }}"
+          --version "${{ needs.prepare.outputs.version }}"
+          --output-dir dist
+          --notes-file RELEASE.md

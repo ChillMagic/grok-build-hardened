@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import hashlib
 import os
 import platform
 import re
@@ -761,6 +762,84 @@ def package_release(version: str, output_dir_value: str, github_output: str | No
     print(f"PACKAGE OK: {archive}")
 
 
+def sha256_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def publish_github_release(
+    metadata: Mapping[str, str],
+    tag: str,
+    version: str,
+    output_dir_value: str,
+    notes_file_value: str,
+) -> None:
+    require_command("gh")
+    expected_tag = release_tag(metadata)
+    expected_version = expected_tag[1:]
+    if tag != expected_tag:
+        fail(f"expected tag {expected_tag}, received {tag}")
+    if version != expected_version:
+        fail(f"expected release version {expected_version}, received {version}")
+
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+        fail("GITHUB_REPOSITORY must identify the target owner/repository")
+
+    output_dir = Path(output_dir_value)
+    if not output_dir.is_absolute():
+        output_dir = REPO_ROOT / output_dir
+    output_dir = output_dir.resolve()
+    archives = sorted((*output_dir.glob("*.tar.gz"), *output_dir.glob("*.zip")))
+    if len(archives) != 3:
+        fail(f"expected three platform archives, found {len(archives)}")
+    for platform_label in ("linux", "macos", "windows"):
+        matches = [path for path in archives if f"-{platform_label}-" in path.name]
+        if len(matches) != 1:
+            fail(f"expected one {platform_label} archive, found {len(matches)}")
+
+    notes_file = Path(notes_file_value)
+    if not notes_file.is_absolute():
+        notes_file = REPO_ROOT / notes_file
+    notes_file = notes_file.resolve()
+    if not notes_file.is_file():
+        fail(f"release notes file is missing: {notes_file}")
+
+    existing = run_command(
+        ("gh", "release", "view", tag, "--repo", repository),
+        capture=True,
+        check=False,
+    )
+    if existing.returncode == 0:
+        fail(f"release already exists and will not be modified: {tag}")
+
+    checksums = output_dir / "SHA256SUMS"
+    checksum_lines = [f"{sha256_digest(path)}  {path.name}" for path in archives]
+    checksums.write_text("\n".join(checksum_lines) + "\n", encoding="utf-8", newline="\n")
+
+    run_command(
+        (
+            "gh",
+            "release",
+            "create",
+            tag,
+            *archives,
+            checksums,
+            "--repo",
+            repository,
+            "--verify-tag",
+            "--title",
+            f"grok-build-hardened {version}",
+            "--notes-file",
+            notes_file,
+        )
+    )
+    print(f"RELEASE PUBLISHED: {repository} {tag}")
+
+
 def validate_release_tag(
     metadata: Mapping[str, str], requested_tag: str, github_output: str | None
 ) -> None:
@@ -841,6 +920,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     tag_parser = subparsers.add_parser("tag-release", help="create the reviewed release tag")
     tag_parser.add_argument("tag", nargs="?")
+
+    publish_parser = subparsers.add_parser(
+        "publish-release", help="create checksums and publish a GitHub Release"
+    )
+    publish_parser.add_argument("--tag", required=True)
+    publish_parser.add_argument("--version", required=True)
+    publish_parser.add_argument("--output-dir", default="dist")
+    publish_parser.add_argument("--notes-file", default="RELEASE.md")
     return parser
 
 
@@ -864,6 +951,14 @@ def main(arguments: Sequence[str] | None = None) -> int:
             validate_release_tag(metadata, args.tag, args.github_output)
         elif args.command == "tag-release":
             tag_release(metadata, args.tag)
+        elif args.command == "publish-release":
+            publish_github_release(
+                metadata,
+                args.tag,
+                args.version,
+                args.output_dir,
+                args.notes_file,
+            )
         else:
             parser.error(f"unknown command: {args.command}")
     except HardeningError as exc:
