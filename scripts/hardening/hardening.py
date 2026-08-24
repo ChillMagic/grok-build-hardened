@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 import traceback
 import zipfile
 from pathlib import Path
@@ -481,14 +482,23 @@ def check_hardening(metadata: Mapping[str, str]) -> None:
         BUILD_SCAN_PATHS,
     )
 
-    added_diff = git(
-        "diff",
-        "--unified=0",
-        f"{upstream_commit}..HEAD",
-        "--",
-        ".",
-        ":!Cargo.lock",
-    ).stdout
+    # A full-fork diff can be large. Have Git write an explicit temporary file
+    # so credential scanning does not depend on platform-specific pipe behavior.
+    with tempfile.TemporaryDirectory(prefix="grok-hardened-diff-") as temporary_dir:
+        added_diff_path = Path(temporary_dir) / "added.diff"
+        git(
+            "diff",
+            "--unified=0",
+            f"--output={added_diff_path}",
+            f"{upstream_commit}..HEAD",
+            "--",
+            ".",
+            ":!Cargo.lock",
+            capture=False,
+        )
+        if not added_diff_path.is_file():
+            fail("Git did not produce the credential-audit diff")
+        added_diff = added_diff_path.read_text(encoding="utf-8", errors="replace")
     added_lines = "\n".join(line for line in added_diff.splitlines() if line.startswith("+"))
     credential_pattern = re.compile(
         r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|"
