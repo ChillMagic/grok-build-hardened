@@ -21,7 +21,6 @@
 //! Memory is enabled through `GROK_MEMORY`, `[memory] enabled`, or remote settings.
 //! When disabled, this crate is not initialized by the host.
 
-pub mod archive;
 pub mod backend;
 pub mod chunker;
 pub mod dream;

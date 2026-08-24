@@ -325,18 +325,24 @@ impl ModelsManager {
             .is_some_and(|a| a.is_session_auth());
         let fetch_auth = ModelFetchAuth::resolve(&cfg.endpoints, has_session);
         let mut cached_etag = None;
-        let prefetched_models = prefetched_models.or_else(|| {
-            let cache = ModelsCacheManager::new();
-            cache
-                .load_fresh(
-                    &fetch_auth.cache_auth_method(),
-                    &crate::remote::models_list_url(&cfg.endpoints, fetch_auth),
-                )
-                .map(|c| {
-                    cached_etag = c.etag;
-                    c.models
-                })
-        });
+        let prefetched_models = crate::util::config::resolve_remote_fetch_enabled()
+            .then_some(prefetched_models)
+            .flatten()
+            .or_else(|| {
+                if !crate::util::config::resolve_remote_fetch_enabled() {
+                    return None;
+                }
+                let cache = ModelsCacheManager::new();
+                cache
+                    .load_fresh(
+                        &fetch_auth.cache_auth_method(),
+                        &crate::remote::models_list_url(&cfg.endpoints, fetch_auth),
+                    )
+                    .map(|c| {
+                        cached_etag = c.etag;
+                        c.models
+                    })
+            });
         let has_prefetched = prefetched_models.is_some();
         let catalog = resolve_model_catalog(cfg, prefetched_models.clone());
 
@@ -797,7 +803,7 @@ impl ModelsManager {
 
     /// Hot-reload the catalog from `~/.grok/models_cache.json` after an external write (config-watcher detected).
     pub(crate) fn reload_from_disk_cache(&self) {
-        self.reload_from_cache_manager(&self.inner.cache);
+        tracing::debug!("remote model cache reload disabled by privacy build");
     }
 
     /// Core of [`Self::reload_from_disk_cache`], parameterized over the cache

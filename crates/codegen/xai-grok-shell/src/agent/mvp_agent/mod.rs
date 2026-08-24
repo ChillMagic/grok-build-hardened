@@ -2270,77 +2270,8 @@ impl MvpAgent {
             agent_ref.get().enforce_grok_code_access(&auth).await;
         });
     }
-    /// Spawn a best-effort bundle sync. Re-fires on every call site (init,
-    /// cached_token, grok.com/oidc); the cheap pre-checks below absorb repeats
-    /// so reconnects are cheap.
-    ///
-    /// Pre-spawn gating order (cheapest first, all synchronous):
-    /// 1. Auth gate — avoid spawning a no-op task on every init.
-    /// 2. Freshness check — skip the sender snapshot + spawn entirely on
-    ///    cache hits, which is the steady-state on every reconnect.
-    /// 3. Single-flight guard — if a previous sync is still in flight (e.g.,
-    ///    initialize + cached_token + oidc fired in quick succession before
-    ///    the first sync's tar extract finished), drop this call to avoid
-    ///    racing concurrent extracts that would interleave per-file writes
-    ///    against `~/.grok/bundled/` and the manifest.
-    pub(crate) fn maybe_sync_bundle_in_background(&self, force: bool) {
-        use crate::extensions::bundle::{
-            BUNDLE_SYNC_TTL, bundle_cache_is_fresh, has_bundle_credentials,
-            maybe_sync_bundle_to_root,
-        };
-        use std::sync::atomic::Ordering;
-        let am = self.auth_manager.clone();
-        let deployment_key = self.deployment_key();
-        if !has_bundle_credentials(Some(&am), deployment_key.as_deref()) {
-            return;
-        }
-        let root = crate::bundle::bundled_root();
-        if !force && bundle_cache_is_fresh(&root, BUNDLE_SYNC_TTL) {
-            tracing::debug!("proactive bundle sync skipped pre-spawn: cache is fresh");
-            return;
-        }
-        let in_flight = self.bundle_sync_in_flight.clone();
-        if in_flight
-            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
-            .is_err()
-        {
-            tracing::debug!("proactive bundle sync skipped: another sync is already in flight");
-            return;
-        }
-        let proxy_base_url = self.cli_chat_proxy_base_url();
-        let alpha_test_key = self.alpha_test_key();
-        let senders = self.resident_cmd_txs();
-        tokio::task::spawn_local(async move {
-            let result = maybe_sync_bundle_to_root(
-                    &root,
-                    &proxy_base_url,
-                    Some(&am),
-                    deployment_key.as_deref(),
-                    alpha_test_key.as_deref(),
-                    force,
-                    BUNDLE_SYNC_TTL,
-                )
-                .await;
-            in_flight.store(false, Ordering::Release);
-            match result {
-                Ok(Some(res)) => {
-                    tracing::info!(
-                        version = %res.version,
-                        personas = res.personas_count,
-                        roles = res.roles_count,
-                        agents = res.agents_count,
-                        skills = res.skills_count,
-                        "proactive bundle sync complete"
-                    );
-                    Self::broadcast_refresh_skill_baseline(senders);
-                }
-                Ok(None) => {}
-                Err(err) => {
-                    tracing::warn!(error = %err, "proactive bundle sync failed");
-                }
-            }
-        });
-    }
+    /// Server-delivered prompt/agent bundles are absent from the privacy build.
+    pub(crate) fn maybe_sync_bundle_in_background(&self, _force: bool) {}
 }
 /// Handle a synthetic turn trace request: allocate a turn number, build a
 /// trace context, await turn completion, then upload the trace.

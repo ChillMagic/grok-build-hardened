@@ -10,12 +10,9 @@ http = { workspace = true }
 log = { workspace = true }
 fastrace = { workspace = true }
 fastrace-tonic = { workspace = true }
-fastrace-opentelemetry = { workspace = true }
 fastrace-reqwest = { workspace = true }
 opentelemetry = { workspace = true }
 opentelemetry-http = { workspace = true }
-opentelemetry-otlp = { workspace = true }
-opentelemetry_sdk = { workspace = true, features = ["testing"] }
 reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 tokio = { workspace = true }
@@ -29,6 +26,7 @@ uuid = { workspace = true }
 [dev-dependencies]
 bytes = { workspace = true }
 http-body-util = { workspace = true }
+opentelemetry_sdk = { workspace = true, features = ["testing"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { workspace = true }
 wiremock = { workspace = true }

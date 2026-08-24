@@ -412,5 +412,8 @@ pub async fn set_show_tips(value: bool) -> Result<()> {
 /// Persist `[cli].auto_update` via `update_config`.
 /// Restart-required: auto-update check fires once on startup.
 pub async fn set_auto_update(value: bool) -> Result<()> {
-    update_config(|cfg| cfg.cli.auto_update = Some(value)).await
+    if value {
+        anyhow::bail!("auto-update was removed from this privacy build");
+    }
+    update_config(|cfg| cfg.cli.auto_update = Some(false)).await
 }

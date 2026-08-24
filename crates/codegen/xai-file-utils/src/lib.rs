@@ -1,20 +1,20 @@
-#![allow(
-    unused_imports,
-    unused_variables,
-    unused_mut,
-    unreachable_code,
-    dead_code
-)]
-//! Local data collection: upload queueing and S3-compatible blob storage.
-pub(crate) mod circuit_breaker_observer;
-/// Wrap a raw client with [`xai_grok_auth::AuthRetryMiddleware`] for automatic 401 retry.
-pub fn with_auth_retry(
-    client: reqwest::Client,
-    credentials: std::sync::Arc<dyn xai_grok_auth::AuthCredentialProvider>,
-) -> reqwest_middleware::ClientWithMiddleware {
-    reqwest_middleware::ClientBuilder::new(client)
-        .with(xai_grok_auth::AuthRetryMiddleware::new(credentials, 1))
-        .build()
+//! Compatibility types for local data handling in the privacy build.
+
+/// This fork is intentionally compiled without passive/background data uploads.
+///
+/// This is a compile-time invariant rather than a setting: configuration,
+/// environment variables, command-line flags, and remote responses must never
+/// be able to re-enable repository, session, trace, feedback, or telemetry
+/// storage uploads in the privacy build.
+pub const DATA_UPLOADS_COMPILED_IN: bool = false;
+
+/// Stable error text returned by every removed storage/upload entry point.
+pub const DATA_UPLOADS_REMOVED_MESSAGE: &str =
+    "data upload capability was removed from this privacy build";
+
+/// Construct the fail-closed error returned by removed upload APIs.
+pub fn data_uploads_removed_error() -> anyhow::Error {
+    anyhow::anyhow!(DATA_UPLOADS_REMOVED_MESSAGE)
 }
 pub mod gcs;
 pub mod queue;

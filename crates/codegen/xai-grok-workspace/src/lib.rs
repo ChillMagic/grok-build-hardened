@@ -28,7 +28,6 @@ pub mod image_capabilities;
 pub mod mcp;
 pub mod permission;
 pub mod project_config;
-pub mod publish;
 pub mod recovery;
 mod restore_fetch;
 pub mod scheduler_liveness;

@@ -448,62 +448,6 @@ pub(crate) struct ClientFsBase {
     pub(crate) canonical: PathBuf,
 }
 impl WorkspaceHandle {
-    /// `None` when not connected. Never hands out an owned
-    /// `ToolServer` — a clone-drop begins server teardown.
-    pub async fn trace_donation_reporter(
-        &self,
-        service_name: &str,
-    ) -> Option<(
-        xai_computer_hub_sdk::HubDonatingReporter,
-        xai_computer_hub_sdk::TraceDonationPump,
-    )> {
-        self.shared
-            .hub_handle
-            .lock()
-            .await
-            .as_ref()
-            .map(|hub| hub.server.trace_donation_reporter(service_name))
-    }
-    /// Post-connect entry point for the log export layer, the analogue of
-    /// [`Self::trace_donation_reporter`]. Returns `None` when not connected
-    /// (the layer stays inert). On
-    /// `Some`, yields a [`LogDonationSender`] to swap into the
-    /// already-installed inert `DonatingLogLayer` plus a drain handle.
-    /// Never hands out an owned `ToolServer` — a clone-drop begins server
-    /// teardown.
-    ///
-    /// [`LogDonationSender`]: xai_computer_hub_sdk::LogDonationSender
-    pub async fn log_donation_layer(
-        &self,
-        service_name: &str,
-    ) -> Option<(
-        xai_computer_hub_sdk::LogDonationSender,
-        xai_computer_hub_sdk::LogDonationPump,
-    )> {
-        self.shared
-            .hub_handle
-            .lock()
-            .await
-            .as_ref()
-            .map(|hub| hub.server.log_donation_layer(service_name))
-    }
-    /// Post-connect entry point for metric export, the analogue of
-    /// [`Self::trace_donation_reporter`]. Returns `None` when not connected
-    /// (no reporter is spawned). On
-    /// `Some`, spawns the periodic Prometheus-registry gather → OTLP →
-    /// export pump and yields a drain handle. Never hands out an owned
-    /// `ToolServer` — a clone-drop begins server teardown.
-    pub async fn metric_donation_reporter(
-        &self,
-        service_name: &str,
-    ) -> Option<xai_computer_hub_sdk::MetricDonationPump> {
-        self.shared
-            .hub_handle
-            .lock()
-            .await
-            .as_ref()
-            .map(|hub| hub.server.metric_donation_reporter(service_name))
-    }
     /// Construct a handle with zero sessions.
     ///
     /// Sessions are created explicitly via [`Self::create_session`] or
@@ -518,8 +462,8 @@ impl WorkspaceHandle {
             config,
             ephemeral_workspace_home(),
             None,
-            true,
             false,
+            true,
             events_enabled(),
             rewind_all_outcomes_from_env(),
             tool_defs_enabled(),
@@ -538,17 +482,17 @@ impl WorkspaceHandle {
     pub(crate) fn new_with_data_collection(
         config: WorkspaceConfig,
         workspace_home: std::path::PathBuf,
-        upload_queue: Arc<xai_file_utils::queue::UploadQueue>,
-        upload_queue_enabled: bool,
-        data_collection_disabled: bool,
+        _upload_queue: Arc<xai_file_utils::queue::UploadQueue>,
+        _upload_queue_enabled: bool,
+        _data_collection_disabled: bool,
         identity: crate::upload::environment::WorkspaceIdentity,
     ) -> WorkspaceResult<Self> {
         Self::build(
             config,
             workspace_home,
-            Some(upload_queue),
-            upload_queue_enabled,
-            data_collection_disabled,
+            None,
+            false,
+            true,
             events_enabled(),
             rewind_all_outcomes_from_env(),
             tool_defs_enabled(),
@@ -4050,8 +3994,7 @@ pub async fn connect_local_workspace(
     })?;
     let api_base_url = std::env::var("GROK_CLI_CHAT_PROXY_BASE_URL")
         .unwrap_or_else(|_| "https://cli-chat-proxy.grok.com/v1".to_string());
-    let data_collection_disabled =
-        std::env::var("GROK_WORKSPACE_DATA_COLLECTION_DISABLED").as_deref() != Ok("false");
+    let data_collection_disabled = true;
     let mut factory = WorkspaceSessionContextFactory::with_auth(auth.clone(), api_base_url.clone());
     if crate::session::tool_config::tool_state_enabled() {
         factory = factory.with_tool_state_home(workspace_home.clone());
@@ -4078,54 +4021,19 @@ pub async fn connect_local_workspace(
     ws_config.project_lsp_trusted = project_lsp_trusted;
     ws_config.require_explicit_toolset = require_explicit_toolset;
     ws_config.confine_fs_to_workspace_root = confine_fs_to_workspace_root;
-    if let Ok(dir) = std::env::var("GROK_WORKSPACE_SERVER_SKILLS_DIR")
-        && !dir.is_empty()
-    {
-        ws_config.skills_config.server_skill_dirs = vec![dir];
-    }
-    if let Ok(dir) = std::env::var("GROK_WORKSPACE_BUNDLED_SKILLS_DIR")
-        && !dir.is_empty()
-    {
-        let allowlist = std::env::var("GROK_WORKSPACE_BUNDLED_SKILLS_ALLOWLIST").ok();
-        ws_config
-            .skills_config
-            .ignore
-            .extend(bundled_allowlist_ignore_dirs(&dir, allowlist.as_deref()));
-        ws_config.skills_config.bundled_skill_dirs = vec![dir];
-    }
-    let proxy_storage = Arc::new(crate::upload::ProxyStorageConfig::new(
-        auth.clone(),
-        api_base_url.clone(),
-        identity.clone(),
-    ));
-    let trace_source: Arc<dyn xai_file_utils::queue::TraceExportSource> = Arc::new(
-        crate::upload::WorkspaceTraceExportSource::new(proxy_storage.clone()),
-    );
-    let upload_queue = Arc::new(xai_file_utils::queue::UploadQueue::spawn(
-        &workspace_home,
-        trace_source,
-        xai_file_utils::queue::UploadRetryPolicy::default(),
-    ));
+    // Server- and bundle-injected skills are remote policy inputs and are
+    // deliberately ignored. Local, project, user, and plugin skills remain.
+    let upload_queue = Arc::new(xai_file_utils::queue::UploadQueue::disabled());
     {
         let recovery_started = std::time::Instant::now();
-        if data_collection_disabled {
-            crate::recovery::purge_spilled_items(&workspace_home);
-        } else {
-            let report =
-                crate::recovery::run_startup_recovery(&workspace_home, &upload_queue).await;
-            tracing::info!(?report, "workspace startup restart-recovery scan complete");
-        }
+        // Remove artifacts left by an older official build; never replay them.
+        crate::recovery::purge_spilled_items(&workspace_home);
         observe_startup_stage(
             STARTUP_STAGE_STARTUP_RECOVERY,
             STARTUP_OUTCOME_OK,
             recovery_started.elapsed().as_secs_f64(),
         );
     }
-    upload_queue.cleanup_orphans(xai_file_utils::queue::DEFAULT_MAX_AGE);
-    crate::upload::spawn_queue_stats_sampler(
-        upload_queue.clone(),
-        std::time::Duration::from_secs(15),
-    );
     if crate::session::tool_config::tool_state_enabled() {
         let home = workspace_home.clone();
         tokio::spawn(async move {

@@ -543,40 +543,13 @@ impl MvpAgent {
     }
     /// Build a `FeedbackClient` with resolved feedback URL and credentials.
     pub(crate) fn feedback_client(&self) -> Option<FeedbackClient> {
-        let (base_url, user_token, alpha_test_key, deployment_key) = self
-            .feedback_credentials()?;
-        Some(
-            FeedbackClient::new(base_url, user_token)
-                .with_alpha_test_key(alpha_test_key)
-                .with_deployment_key(deployment_key)
-                .with_auth_manager(self.auth_manager.clone()),
-        )
+        None
     }
     /// Build a `RegistryConfig` if the feature is enabled (for passing to persistence actor).
     pub(super) fn build_registry_config(
         &self,
     ) -> Option<crate::session::RegistryConfig> {
-        let remote = self
-            .cfg
-            .borrow()
-            .remote_settings
-            .as_ref()
-            .and_then(|s| s.session_registry_enabled);
-        if !self.session_registry_local.or(remote).unwrap_or(false) {
-            return None;
-        }
-        let auth = self.auth_manager.current_or_expired()?;
-        if !auth.is_xai_auth() {
-            return None;
-        }
-        let key = auth.key.clone();
-        let cfg = self.cfg.borrow();
-        Some(crate::session::RegistryConfig {
-            base_url: cfg.endpoints.proxy_url(),
-            user_token: key,
-            deployment_key: cfg.endpoints.deployment_key.clone(),
-            alpha_test_key: cfg.endpoints.alpha_test_key.clone(),
-        })
+        None
     }
     /// Build a `SessionRegistryClient` if the feature is enabled.
     /// Delegates to `build_registry_config()` for the enabled check + config.
@@ -597,10 +570,7 @@ impl MvpAgent {
     pub(crate) fn conversations_client(
         &self,
     ) -> Option<crate::remote::ConversationsClient> {
-        if !crate::session::unified_list::conversations_lane_active() {
-            return None;
-        }
-        Some(crate::remote::ConversationsClient::new(self.auth_manager.clone()))
+        None
     }
     pub(crate) fn workspaces_client(&self) -> crate::remote::WorkspacesClient {
         crate::remote::WorkspacesClient::new(self.auth_manager.clone())
@@ -1585,16 +1555,7 @@ impl MvpAgent {
         &self,
         settings: crate::util::config::RemoteSettings,
     ) {
-        let mut cfg = self.cfg.borrow_mut();
-        cfg.remote_settings = Some(settings);
-        crate::util::config::sync_campaign_fields(&mut cfg);
-        if let Some(v) = cfg
-            .remote_settings
-            .as_ref()
-            .and_then(|s| s.path_not_found_hints)
-        {
-            cfg.path_not_found_hints = v;
-        }
+        self.cfg.borrow_mut().remote_settings = None;
     }
     /// Stores settings and fans out side effects via
     /// [`Self::on_remote_settings_changed`]. Shared tail for callers that do
@@ -3171,77 +3132,17 @@ impl MvpAgent {
     pub(crate) async fn trace_upload_config(
         &self,
     ) -> Option<crate::session::repo_changes::UploadMethod> {
-        let (method, _reason) = self.trace_upload_config_with_reason().await;
-        method
+        None
     }
     pub(super) fn trace_upload_config_snapshot(
         &self,
     ) -> Option<crate::session::repo_changes::UploadMethod> {
-        if self.is_data_collection_disabled()
-            || !self.cfg.borrow().is_trace_upload_enabled()
-        {
-            return None;
-        }
-        let cfg = self.cfg.borrow();
-        let auth_token = if cfg.endpoints.deployment_key.is_none() {
-            self.auth_manager
-                .current_or_expired()
-                .filter(|auth| auth.is_xai_auth())
-                .map(|auth| auth.key)
-        } else {
-            None
-        };
-        cfg.endpoints.resolve_upload_method(auth_token)
+        None
     }
     pub(super) fn diagnostic_upload_config(
         &self,
     ) -> Option<crate::auth::DiagnosticUploader> {
-        self.sync_collection_config_gate();
-        let cfg = self.cfg.borrow();
-        if !cfg.is_trace_upload_enabled() {
-            return None;
-        }
-        let proxy_base_url = cfg.endpoints.resolve_trace_upload_url();
-        let deployment_key = cfg.endpoints.deployment_key.clone();
-        let alpha_test_key = cfg.endpoints.alpha_test_key.clone();
-        let auth_manager = self.auth_manager.clone();
-        let trace_upload_live = self.trace_upload_live.clone();
-        Some(
-            std::sync::Arc::new(move |
-                log_bytes: Vec<u8>,
-                auth_token: String,
-                user_id: String|
-            {
-                let proxy_base_url = proxy_base_url.clone();
-                let deployment_key = deployment_key.clone();
-                let alpha_test_key = alpha_test_key.clone();
-                let auth_manager = auth_manager.clone();
-                let trace_upload_live = trace_upload_live.clone();
-                Box::pin(async move {
-                    if !auth_manager.allows_data_collection()
-                        || !trace_upload_live.load(std::sync::atomic::Ordering::Relaxed)
-                    {
-                        tracing::debug!(
-                            "skipping auth-diagnostics upload: data collection disabled"
-                        );
-                        return;
-                    }
-                    let upload_method = crate::session::repo_changes::UploadMethod::Proxy {
-                        proxy_base_url,
-                        user_token: auth_token,
-                        deployment_key,
-                        alpha_test_key,
-                    };
-                    crate::upload::gcs::upload_to_auth_diagnostics(
-                            &log_bytes,
-                            &user_id,
-                            &upload_method,
-                            auth_manager,
-                        )
-                        .await;
-                })
-            }),
-        )
+        None
     }
     /// Like `trace_upload_config`, but also returns the reason why uploads
     /// are enabled or disabled for structured session events.
@@ -3252,6 +3153,8 @@ impl MvpAgent {
         crate::upload::turn::TraceUploadReason,
     ) {
         use crate::upload::turn::TraceUploadReason;
+        return (None, TraceUploadReason::FeatureOff);
+
         if self.is_data_collection_disabled() {
             crate::upload::trace::spawn_startup_spill_reconcile(
                 crate::util::grok_home::grok_home(),
@@ -3764,6 +3667,8 @@ impl MvpAgent {
         session_info: &crate::session::info::Info,
         turn_number: u64,
     ) -> Option<PromptTraceContext> {
+        return None;
+
         let (upload_method, upload_reason) = self
             .trace_upload_config_with_reason()
             .await;

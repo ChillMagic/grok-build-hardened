@@ -6,6 +6,10 @@
 //! that only want event tracking + inference metrics no longer pull in
 //! Mixpanel/HTTP/identity dependencies.
 
+/// Network telemetry is a compile-time-removed capability in the privacy
+/// build.  No runtime or remote setting may override this marker.
+pub const NETWORK_TELEMETRY_COMPILED_IN: bool = false;
+
 pub mod activity;
 mod appender;
 pub mod client;
@@ -22,7 +26,6 @@ pub mod instrumentation;
 pub mod memory_log;
 pub mod memory_telemetry;
 pub mod otel_layer;
-pub(crate) mod otlp_http;
 pub mod process_info;
 pub mod process_metrics;
 pub mod prompt_timing;

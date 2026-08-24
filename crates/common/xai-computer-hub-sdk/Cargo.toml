@@ -21,7 +21,6 @@ arc-swap = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 url = { workspace = true }
 http = { workspace = true }
 prometheus = { workspace = true, optional = true }
@@ -31,15 +30,6 @@ chrono = { workspace = true }
 parking_lot = { workspace = true }
 
 fastrace = { workspace = true }
-# Trace donation: spans convert via the stock fastrace -> OTel reporter
-# and ship as standard OTLP payloads.
-fastrace-opentelemetry = { workspace = true }
-opentelemetry = { workspace = true }
-opentelemetry_sdk = { workspace = true }
-opentelemetry-proto = { workspace = true }
-prost = { workspace = true }
-base64 = { workspace = true }
-
 xai-tool-protocol = { workspace = true }
 xai-tool-runtime = { workspace = true }
 xai-tool-types = { workspace = true }

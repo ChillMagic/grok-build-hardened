@@ -50,23 +50,8 @@ fn select_search_error_class(
 
 /// Embedding-client credentials scoped to a trusted endpoint. Only
 /// [`Self::for_endpoint`] retains a live credential; the empty default fails closed.
-#[derive(Clone, Default)]
-pub struct EndpointScopedCredentials {
-    endpoint: Option<reqwest::Url>,
-    auth_credentials: Option<Arc<dyn xai_grok_auth::AuthCredentialProvider>>,
-    api_key_provider: Option<xai_grok_tools::types::SharedApiKeyProvider>,
-}
-
-// Manual Debug that redacts the credential handles; only their presence shows.
-impl std::fmt::Debug for EndpointScopedCredentials {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EndpointScopedCredentials")
-            .field("endpoint", &self.endpoint)
-            .field("has_auth_credentials", &self.auth_credentials.is_some())
-            .field("has_api_key_provider", &self.api_key_provider.is_some())
-            .finish()
-    }
-}
+#[derive(Clone, Debug, Default)]
+pub struct EndpointScopedCredentials;
 
 impl EndpointScopedCredentials {
     pub fn none() -> Self {
@@ -74,7 +59,7 @@ impl EndpointScopedCredentials {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.auth_credentials.is_none() && self.api_key_provider.is_none()
+        true
     }
 
     /// Retains the credentials only for a trusted, parsable `endpoint`; otherwise drops them.
@@ -84,38 +69,13 @@ impl EndpointScopedCredentials {
         auth_credentials: Option<Arc<dyn xai_grok_auth::AuthCredentialProvider>>,
         api_key_provider: Option<xai_grok_tools::types::SharedApiKeyProvider>,
     ) -> Self {
-        if is_trusted(endpoint)
-            && let Ok(url) = reqwest::Url::parse(endpoint)
-        {
-            return Self {
-                endpoint: Some(url),
-                auth_credentials,
-                api_key_provider,
-            };
-        }
-        if auth_credentials.is_some() || api_key_provider.is_some() {
-            tracing::info!(
-                target: crate::MEMORY_LOG_TARGET,
-                endpoint,
-                "memory embeddings: session credentials withheld for non-first-party endpoint; its own key, if any, still applies"
-            );
-        }
+        let _ = (endpoint, is_trusted, auth_credentials, api_key_provider);
         Self::none()
     }
 
-    fn auth_credentials(&self) -> Option<&Arc<dyn xai_grok_auth::AuthCredentialProvider>> {
-        self.auth_credentials.as_ref()
-    }
-
-    fn api_key_provider(&self) -> Option<&xai_grok_tools::types::SharedApiKeyProvider> {
-        self.api_key_provider.as_ref()
-    }
-
-    fn approved_for(&self, base_url: &str) -> bool {
-        match &self.endpoint {
-            None => self.is_empty(),
-            Some(endpoint) => reqwest::Url::parse(base_url).is_ok_and(|url| &url == endpoint),
-        }
+    #[cfg(test)]
+    fn approved_for(&self, _base_url: &str) -> bool {
+        false
     }
 }
 
@@ -161,44 +121,12 @@ impl MemoryBackendParams {
 }
 
 async fn build_embedding_provider(
-    config: Option<&xai_grok_config_types::MemoryEmbeddingConfig>,
-    credentials: &EndpointScopedCredentials,
-    static_api_key: Option<&str>,
-    base_url: &str,
+    _config: Option<&xai_grok_config_types::MemoryEmbeddingConfig>,
+    _credentials: &EndpointScopedCredentials,
+    _static_api_key: Option<&str>,
+    _base_url: &str,
 ) -> Option<super::embedding::ApiEmbeddingProvider> {
-    let config = config?;
-    if config.model.as_ref().is_none_or(|m| m.is_empty()) {
-        return None;
-    }
-
-    // Enforce at runtime, in release too: a `debug_assert` would compile out of
-    // shipped binaries and let a scoped credential reach an unapproved URL.
-    let credentials_approved = credentials.approved_for(base_url);
-    if !credentials_approved {
-        tracing::error!(
-            target: crate::MEMORY_LOG_TARGET,
-            base_url,
-            approved = ?credentials.endpoint,
-            "memory embeddings: scoped credentials do not match the request URL; dropping them"
-        );
-    }
-
-    if credentials_approved && let Some(creds) = credentials.auth_credentials() {
-        let client = super::embedding::build_middleware_client(creds.clone());
-        return super::embedding::ApiEmbeddingProvider::from_config(
-            config,
-            base_url.to_owned(),
-            client,
-        );
-    }
-
-    let per_call_key = if credentials_approved && let Some(p) = credentials.api_key_provider() {
-        p.current_api_key_async().await
-    } else {
-        None
-    };
-    let api_key = per_call_key.or_else(|| static_api_key.map(|s| s.to_owned()))?;
-    super::embedding::ApiEmbeddingProvider::from_session(config, base_url.to_owned(), api_key)
+    None
 }
 
 /// `MemoryBackend` implementation backed by hybrid search (FTS5 + vector KNN).

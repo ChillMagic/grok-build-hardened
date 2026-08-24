@@ -2197,6 +2197,11 @@ impl acp::Agent for MvpAgent {
         #[allow(unused_mut)]
         let mut backend_no_bridge_err: Option<acp::Error> = None;
         let method = args.method.clone();
+        if crate::privacy_build::blocks_extension(method.as_ref()) {
+            return Err(acp::Error::internal_error().data(
+                crate::privacy_build::REMOVED_MESSAGE,
+            ));
+        }
         let result = match method.as_ref() {
             "x.ai/getApiKey" | "x.ai/setApiKey" => {
                 crate::extensions::auth::handle(self, &args).await

@@ -214,12 +214,6 @@ pub(crate) fn user_agent_dirs(
     if let Some(h) = home {
         dirs.push((h.join(".claude").join("agents"), AgentScope::User));
     }
-    if let Some(g) = grok_home {
-        dirs.push((g.join("bundled").join("agents"), AgentScope::Bundled));
-    }
-    if let Some(l) = &legacy_grok {
-        dirs.push((l.join("bundled").join("agents"), AgentScope::Bundled));
-    }
     dirs
 }
 

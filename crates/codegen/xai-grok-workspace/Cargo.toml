@@ -75,8 +75,8 @@ glob = "0.3"
 xai-grok-sandbox = { path = "../xai-grok-sandbox", default-features = false }
 xai-grok-hooks = { path = "../xai-grok-hooks" }
 xai-hunk-tracker = { path = "../xai-hunk-tracker" }
-# `metrics` enables the SDK's metric-donation client (periodic Prometheus
-# registry gather → OTLP → hub donation pump); see metric_donation_reporter.
+# Local connection metrics remain available; all donation/export modules are
+# removed from the SDK in the privacy build.
 xai-computer-hub-sdk = { workspace = true, features = ["metrics"] }
 xai-computer-hub-mcp-adapter = { path = "../../common/xai-computer-hub-mcp-adapter" }
 xai-grok-mcp = { path = "../xai-grok-mcp" }
@@ -85,7 +85,6 @@ xai-grok-session-events = { workspace = true }
 xai-grok-auth = { path = "../xai-grok-auth" }
 xai-grok-telemetry = { workspace = true }
 xai-tty-utils = { workspace = true }
-reqwest = { workspace = true }
 xai-tool-protocol = { workspace = true }
 xai-tool-runtime = { workspace = true }
 xai-tool-types = { workspace = true }
@@ -136,6 +135,7 @@ default-bazel = [
     ]
 
 [dev-dependencies]
+reqwest = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 xai-test-utils = { path = "../../common/xai-test-utils" }

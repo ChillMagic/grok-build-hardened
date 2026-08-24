@@ -73,34 +73,8 @@ pub(crate) fn exit_on_config_error<T>(e: String) -> T {
 /// `sync_managed`: when true, missing-settings fallback may also refresh
 /// managed-config. Must be false before the managed-policy gate.
 fn ensure_remote_settings_side_effects(cfg: &mut AgentConfig, sync_managed: bool) {
-    // Fallback: if the client didn't pre-supply remote settings, fetch them
-    // now so remote-settings-gated features work regardless of which client
-    // spawned us. Clients that already call `start_early_prefetch()` and
-    // thread the result into `cfg.remote_settings` skip this entirely.
-    if cfg.remote_settings.is_none() {
-        let handle = if sync_managed {
-            crate::agent::models::start_early_prefetch(Some(cfg.grok_com_config.clone()))
-        } else {
-            crate::agent::models::start_early_prefetch_settings_only(Some(
-                cfg.grok_com_config.clone(),
-            ))
-        };
-        if let Some(handle) = handle {
-            match handle.join() {
-                Ok(result) => {
-                    cfg.remote_settings = result.settings;
-                    crate::util::config::set_remote_campaigns_from_settings(
-                        cfg.remote_settings.as_ref(),
-                    );
-                    tracing::info!("remote_settings fetched as shell-level fallback");
-                }
-                Err(_) => {
-                    tracing::warn!("remote_settings fallback prefetch thread panicked");
-                }
-            }
-        }
-    }
-    crate::agent::config::apply_remote_settings_side_effects(cfg.remote_settings.as_ref());
+    cfg.remote_settings = None;
+    crate::util::config::set_remote_campaigns_from_settings(None);
 }
 
 /// Config transform: apply managed settings, fetch remote settings,
@@ -128,6 +102,9 @@ fn resolve_config(cfg: &AgentConfig, auth_manager: &AuthManager) -> AgentConfig 
     // Full prefetch (with managed-config sync when stale) is allowed after the gate.
     ensure_remote_settings_side_effects(&mut cfg, true);
     crate::util::config::sync_campaign_fields(&mut cfg);
+
+    cfg.remote_settings = None;
+    cfg.storage_mode = StorageMode::Local;
 
     // env var > remote settings > Local. Skip remote settings for Generic (grok -p, subagents).
     let has_xai_auth = auth_manager.current().is_some_and(|a| a.is_xai_auth());
@@ -165,12 +142,6 @@ fn init_process(cfg: &AgentConfig, auth_manager: &AuthManager) {
         xai_grok_telemetry::unified_log::set_version(xai_grok_version::VERSION);
         let limits = crate::util::limits::ProcessLimits::read();
         limits.log();
-
-        if !cfg!(test) {
-            // Clear a logged-out team's files before the background sync runs.
-            crate::managed_config::clear_orphan();
-            crate::managed_config::spawn_sync(tokio_util::sync::CancellationToken::new());
-        }
 
         let grok_home = crate::util::grok_home::grok_home();
         crate::builtin::extract_builtin_files(&grok_home);

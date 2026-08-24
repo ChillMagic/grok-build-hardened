@@ -41,19 +41,7 @@ pub fn resolve_zdr_access_enabled(
 /// what is unreachable when this knob is needed (firewalled / air-gapped
 /// deployments), and an env var would be one more way to re-arm the fetches.
 pub fn resolve_remote_fetch_enabled() -> bool {
-    match crate::config::ConfigLayers::load() {
-        Ok(layers) => remote_fetch_enabled_from_layers(&layers),
-        // The full-layer load is all-or-nothing, but the policy tiers load
-        // independently (requirements soft-fail per layer; the managed loaders
-        // are the same ones ConfigLayers::load uses) — a corrupt user-writable
-        // config.toml must not disarm a requirements or managed-layer pin.
-        // Fail open only when policy is genuinely absent.
-        Err(_) => remote_fetch_enabled_from_policy_layers(
-            crate::config::load_merged_requirements().as_ref(),
-            crate::config::load_managed_config().ok().as_ref(),
-            crate::config::load_system_managed_config().ok().as_ref(),
-        ),
-    }
+    false
 }
 
 pub const REMOTE_FETCH_CONFIG_PATH: &str = "features.remote_fetch";

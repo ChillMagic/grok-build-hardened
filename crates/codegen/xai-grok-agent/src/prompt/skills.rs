@@ -14,9 +14,11 @@ pub use xai_grok_tools::implementations::skills::types::{SkillInfo, SkillScope};
 /// vendor-compat config without reaching into `xai_grok_tools` directly.
 pub use xai_grok_tools::types::compat::CompatConfig;
 
+#[cfg(test)]
+use xai_grok_tools::implementations::skills::discovery::walk_for_skill_md;
 use xai_grok_tools::implementations::skills::discovery::{
     find_command_paths, find_skill_md_paths, find_skill_paths, is_valid_skill_name,
-    normalize_skill_name, parse_skill_files, scan_md_files, walk_for_skill_md,
+    normalize_skill_name, parse_skill_files, scan_md_files,
 };
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -100,14 +102,9 @@ pub async fn list_skills_with_plugins(
     });
     skills.extend(collect_config_skills(&config.paths, git_root.as_deref()));
 
-    skills.extend(collect_injected_skills(
-        &config.server_skill_dirs,
-        SkillScope::Server,
-    ));
-    skills.extend(collect_injected_skills(
-        &config.bundled_skill_dirs,
-        SkillScope::Bundled,
-    ));
+    // Server-synced and platform-bundled directories are intentionally ignored
+    // in the privacy build. Local, project, user, config-path, and plugin skills
+    // remain available.
 
     let mut skills = filter_skills(skills, &config.ignore);
     skills.sort_by_key(|s| s.scope);
@@ -319,14 +316,6 @@ async fn list_skills_with_options(
         );
     }
 
-    let bundled_dir = global_dir.join("bundled");
-    collect_discovered_paths(
-        find_skill_paths(&bundled_dir),
-        SkillScope::Bundled,
-        &mut seen_canonical_paths,
-        &mut skill_files,
-    );
-
     parse_skill_files(skill_files)
 }
 
@@ -385,23 +374,6 @@ fn collect_config_skills(config_paths: &[String], git_root: Option<&Path>) -> Ve
         );
     }
     skills
-}
-
-fn collect_injected_skills(dirs: &[String], scope: SkillScope) -> Vec<SkillInfo> {
-    let mut skill_files: Vec<(PathBuf, SkillScope)> = Vec::new();
-    let mut seen = HashSet::new();
-
-    for raw in dirs {
-        let expanded = expand_tilde(raw);
-        if !expanded.is_dir() {
-            continue;
-        }
-        let mut dir_paths = Vec::new();
-        walk_for_skill_md(&expanded, &mut dir_paths, 0);
-        collect_discovered_paths(dir_paths, scope, &mut seen, &mut skill_files);
-    }
-
-    parse_skill_files(skill_files)
 }
 
 /// Deduplicate skills while preserving first-seen priority order.

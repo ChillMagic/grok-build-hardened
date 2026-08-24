@@ -5,8 +5,6 @@ pub(crate) mod chat_models_client;
 pub mod client;
 pub mod conversations_client;
 pub mod pull;
-#[cfg(test)]
-mod pull_smoke_test;
 pub(crate) mod skills_client;
 pub mod sync;
 pub mod workspaces_client;

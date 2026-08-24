@@ -4,11 +4,7 @@
 //! layers combine into the effective config — layer precedence, the
 //! `GROK_CONFIG` overlay, and campaign resolution.
 
-use crate::loader::{
-    deep_merge_toml, load_from_disk, load_managed_config, load_system_managed_config,
-    normalize_config_layer,
-};
-use crate::validation::{load_requirements, load_system_requirements};
+use crate::loader::{deep_merge_toml, load_from_disk, normalize_config_layer};
 
 /// Whether a layer merge includes the `GROK_CONFIG` overlay.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,71 +88,19 @@ impl Default for ConfigLayers {
 
 impl ConfigLayers {
     pub fn load() -> std::io::Result<Self> {
-        use crate::campaigns::{CampaignOverrides, take_campaign_entries};
-
-        let mut system_managed = load_system_managed_config()?;
-        let system_managed_campaigns = take_campaign_entries(&mut system_managed, "system_managed");
-
-        let mut managed = load_managed_config()?;
-        let managed_campaigns = take_campaign_entries(&mut managed, "managed");
-
+        // Privacy fork: only the user's own config and explicit environment
+        // overlay participate. Server-synced managed_config.toml,
+        // requirements.toml, system-managed layers, and every campaign source
+        // are excluded at this single merge choke point.
         let mut user = load_from_disk()?;
-        let user_campaigns = take_campaign_entries(&mut user, "user");
-
-        let env_overlay = crate::env_overlay::load_env_overlay();
-
-        let mut user_requirements = load_requirements();
-        let mut system_requirements = load_system_requirements();
-        let mut mdm_requirements = crate::validation::mdm_requirements_value();
-
-        // Highest-authority requirements tier first: `merge_campaign_entries` is
-        // first-id-wins, so a duplicate campaign id must resolve mdm > system >
-        // user — matching the layer precedence in `effective_config_base` (where
-        // mdm is merged last/highest).
-        let mut requirements_campaigns = Vec::new();
-        if let Some(ref mut req) = mdm_requirements {
-            requirements_campaigns.extend(take_campaign_entries(req, "requirements"));
-        }
-        if let Some(ref mut req) = system_requirements {
-            requirements_campaigns.extend(take_campaign_entries(req, "requirements"));
-        }
-        if let Some(ref mut req) = user_requirements {
-            requirements_campaigns.extend(take_campaign_entries(req, "requirements"));
-        }
-
-        // Normalize each layer before it is ever merged, so `[toolset.web_search]`'s
-        // mutually-exclusive `allowed_domains` / `excluded_domains` travel together:
-        // a layer that sets one clears the other to `[]`. That makes the existing
-        // `deep_merge_toml` replace the whole policy from the winning layer instead
-        // of mixing keys across layers.
-        normalize_config_layer(&mut system_managed);
-        normalize_config_layer(&mut managed);
+        let _discarded_campaigns =
+            crate::campaigns::take_campaign_entries(&mut user, "privacy-disabled");
         normalize_config_layer(&mut user);
-        for req in [
-            &mut user_requirements,
-            &mut system_requirements,
-            &mut mdm_requirements,
-        ]
-        .into_iter()
-        .flatten()
-        {
-            normalize_config_layer(req);
-        }
 
         Ok(Self {
-            system_managed,
-            managed,
             user,
-            env_overlay,
-            user_requirements,
-            system_requirements,
-            mdm_requirements,
-            campaigns: CampaignOverrides {
-                requirements: requirements_campaigns,
-                user: user_campaigns,
-                managed: managed_campaigns,
-                system_managed: system_managed_campaigns,
-            },
+            env_overlay: crate::env_overlay::load_env_overlay(),
+            ..Self::default()
         })
     }
 

@@ -223,35 +223,6 @@ async fn local_harness_preserves_bash_chat_completion_output() {
     let typed = drain_terminal_ok(stream).await;
     assert_bash_cco_terminal(&typed);
 }
-/// No connection ⇒ every export entry point returns `None`, so the
-/// binary leaves the `DonatingLogLayer` inert and spawns no metric reporter.
-/// This is the flag-free "activate only on connection" contract that log
-/// and metric export share with the pre-existing `trace_donation_reporter`.
-#[tokio::test]
-async fn donation_entry_points_are_inert_without_a_hub() {
-    let handle = make_handle();
-    assert!(
-        handle
-            .trace_donation_reporter("prod_grok_workspace")
-            .await
-            .is_none(),
-        "trace export must stay inert without a connection"
-    );
-    assert!(
-        handle
-            .log_donation_layer("prod_grok_workspace")
-            .await
-            .is_none(),
-        "log export must stay inert without a connection"
-    );
-    assert!(
-        handle
-            .metric_donation_reporter("prod_grok_workspace")
-            .await
-            .is_none(),
-        "metric export must stay inert without a connection"
-    );
-}
 #[test]
 fn rewind_outcome_label_maps_each_variant() {
     assert_eq!(

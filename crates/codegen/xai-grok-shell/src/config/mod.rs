@@ -366,7 +366,7 @@ impl SubagentsConfig {
         cli_flag: bool,
         config: &toml::Value,
         user_grok_root: Option<&std::path::Path>,
-        bundled_root: &std::path::Path,
+        _bundled_root: &std::path::Path,
     ) -> Self {
         let mut result: Self = config
             .get("subagents")
@@ -385,8 +385,6 @@ impl SubagentsConfig {
             result.discover_roles_in_dir(&root.join("roles"));
             result.discover_personas_in_dir(&root.join("personas"));
         }
-        result.discover_roles_in_dir(&bundled_root.join("roles"));
-        result.discover_personas_in_dir(&bundled_root.join("personas"));
         result
     }
     pub(crate) fn effective_definition_maps(
@@ -437,7 +435,7 @@ impl ManagedMcpsConfig {
     /// Priority: env var > TOML > remote > default (enabled interactive, disabled headless).
     pub fn resolve(
         config: &toml::Value,
-        remote: Option<&crate::util::config::RemoteSettings>,
+        _remote: Option<&crate::util::config::RemoteSettings>,
         is_headless: bool,
     ) -> Self {
         let mut result: Self = config
@@ -454,21 +452,13 @@ impl ManagedMcpsConfig {
             "GROK_MANAGED_MCPS_ENABLED",
             result.enabled,
             has_local_enabled,
-            remote.and_then(|r| r.managed_mcps_enabled),
+            None,
             !is_headless,
         );
         result.enabled = resolved.value;
-        let has_local_gateway_tools =
-            managed_mcps_table.is_some_and(|t| t.contains_key("gateway_tools_enabled"));
-        let gateway_resolved = crate::agent::config::resolve_enabled(
-            None,
-            "GROK_MANAGED_MCP_GATEWAY_TOOLS_ENABLED",
-            result.gateway_tools_enabled,
-            has_local_gateway_tools,
-            remote.and_then(|r| r.managed_mcp_gateway_tools_enabled),
-            false,
-        );
-        result.gateway_tools_enabled = result.enabled && gateway_resolved.value;
+        // The vendor gateway is a server-delivered tool catalog and therefore
+        // cloud control. Local/config/plugin MCP servers remain enabled above.
+        result.gateway_tools_enabled = false;
         result
     }
 }
@@ -848,25 +838,6 @@ impl StorageMode {
         cli_override: Option<&str>,
         remote: Option<&crate::util::config::RemoteSettings>,
     ) -> Self {
-        if let Some(mode) = cli_override {
-            match mode {
-                "writeback" => return Self::Writeback,
-                "local" => return Self::Local,
-                other => {
-                    tracing::warn!(mode = other, "unknown --storage-mode value, ignoring");
-                }
-            }
-        }
-        match std::env::var("GROK_STORAGE_MODE").as_deref() {
-            Ok("writeback") => return Self::Writeback,
-            Ok("local") => return Self::Local,
-            _ => {}
-        }
-        if let Some(remote) = remote
-            && remote.writeback_enabled == Some(true)
-        {
-            return Self::Writeback;
-        }
         Self::Local
     }
     /// Resolve from remote settings, enforcing the rule that `Writeback`
@@ -877,10 +848,7 @@ impl StorageMode {
         remote: Option<&crate::util::config::RemoteSettings>,
         has_xai_auth: bool,
     ) -> Self {
-        match Self::resolve(None, remote) {
-            Self::Writeback if !has_xai_auth => Self::Local,
-            mode => mode,
-        }
+        Self::Local
     }
 }
 pub use xai_grok_config::ConfigLayers;

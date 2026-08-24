@@ -1731,11 +1731,11 @@ impl RepoChangesDedupConfig {}
 impl Default for RepoChangesDedupConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             include_inline_fallback: false,
             max_inline_bytes: 0,
-            dedup_untracked: true,
-            dedup_binary: true,
+            dedup_untracked: false,
+            dedup_binary: false,
             untracked_max_bytes: 0,
             untracked_exclude_globs: Vec::new(),
         }
@@ -2437,7 +2437,7 @@ impl Config {
         self.resolve_trace_upload().value
     }
     pub(crate) fn is_feedback_enabled(&self) -> bool {
-        self.is_feature_enabled(Feature::Feedback)
+        false
     }
     pub(crate) fn is_session_recap_enabled(&self) -> bool {
         self.is_feature_enabled(Feature::SessionRecap)
@@ -2452,42 +2452,10 @@ impl Config {
         self.is_feature_enabled(Feature::TwoPassCompaction)
     }
     pub(crate) fn resolve_telemetry_mode(&self) -> Resolved<TelemetryMode> {
-        if let Some(mode) = self.requirements.telemetry.pinned() {
-            return Resolved::new(mode, ConfigSource::Requirement);
-        }
-        if let Some(mode) = env_telemetry_mode("GROK_TELEMETRY_ENABLED") {
-            return Resolved::new(mode, ConfigSource::Env);
-        }
-        if let Some(mode) = self.features.telemetry {
-            return Resolved::new(mode, ConfigSource::Config);
-        }
-        if let Some(rs) = self.remote_settings.as_ref() {
-            if let Some(mode_str) = rs.telemetry_mode.as_deref()
-                && let Some(mode) = TelemetryMode::parse(mode_str)
-            {
-                return Resolved::new(mode, ConfigSource::Remote);
-            }
-            if let Some(val) = rs.telemetry_enabled {
-                return Resolved::new(TelemetryMode::from(val), ConfigSource::Remote);
-            }
-        }
         Resolved::new(TelemetryMode::Disabled, ConfigSource::Default)
     }
     pub(crate) fn resolve_trace_upload(&self) -> Resolved<bool> {
-        let mode = self.resolve_telemetry_mode();
-        let ff = if mode.value.is_disabled() {
-            None
-        } else {
-            self.remote_settings
-                .as_ref()
-                .and_then(|s| s.trace_upload_enabled)
-        };
-        BoolFlag::env("GROK_TELEMETRY_TRACE_UPLOAD")
-            .requirement(self.requirements.trace_upload.pinned())
-            .config(self.telemetry.trace_upload)
-            .feature_flag(ff)
-            .default(mode.value.is_enabled())
-            .resolve()
+        Resolved::new(false, ConfigSource::Default)
     }
     /// Resolve jemalloc heap-profile config from stored remote settings + gates.
     pub fn resolve_jemalloc_heap_profile(
@@ -3253,29 +3221,18 @@ impl SyncBoolFlag {
 /// Sync slice of [`Config::resolve_telemetry_mode`] for use before the tokio
 /// runtime (e.g. `init_sentry`). `true` only when explicitly off.
 pub(crate) fn is_telemetry_disabled_sync() -> bool {
-    !SyncBoolFlag::new(telemetry_enabled_from_toml)
-        .disable_env("DISABLE_TELEMETRY")
-        .enable_env(grok_telemetry_env_enabled)
-        .resolve()
+    true
 }
 /// Like [`is_telemetry_disabled_sync`] but only `true` when telemetry is
 /// *explicitly* off; absence is not disabled (`.default(true)`) so remote-only
 /// enablement still builds the OTLP exporter (the runtime gate then governs it).
 pub(crate) fn is_telemetry_explicitly_disabled_sync() -> bool {
-    !SyncBoolFlag::new(telemetry_enabled_from_toml)
-        .disable_env("DISABLE_TELEMETRY")
-        .enable_env(grok_telemetry_env_enabled)
-        .default(true)
-        .resolve()
+    true
 }
 /// Sync sibling of [`is_telemetry_disabled_sync`] scoped to Sentry. Inherits
 /// from telemetry when no Sentry-specific signal is set.
 pub fn is_error_reporting_disabled_sync() -> bool {
-    !SyncBoolFlag::new(error_reporting_enabled_from_toml)
-        .disable_env("DISABLE_ERROR_REPORTING")
-        .enable_env(|| env_bool("GROK_ERROR_REPORTING"))
-        .inherit(|| !is_telemetry_disabled_sync())
-        .resolve()
+    true
 }
 /// `[features] telemetry` as enabled bool. SessionMetrics counts as enabled
 /// — see ERROR_REPORTING_PLAN.md. `None` for absent or unparseable.
@@ -3319,11 +3276,7 @@ pub(crate) fn read_requirements_toml() -> Option<toml::Value> {
 /// `internal_pipeline_consumed_otel_vars` simultaneously blocks the external
 /// stream — exactly the split this design forbids.
 pub(crate) fn external_otel_master_switch_resolved() -> bool {
-    external_otel_master_switch_from(
-        xai_grok_config::load_merged_requirements().as_ref(),
-        env_bool("GROK_EXTERNAL_OTEL"),
-        crate::config::load_effective_config().ok().as_ref(),
-    )
+    false
 }
 /// Testable core of [`external_otel_master_switch_resolved`].
 pub(crate) fn external_otel_master_switch_from(
@@ -3355,13 +3308,7 @@ pub(crate) fn external_otel_master_switch_from(
 pub fn resolve_external_otel_config(
     client: xai_grok_telemetry::external::config::ExternalClientInfo,
 ) -> Option<xai_grok_telemetry::external::ExternalOtelConfig> {
-    resolve_external_otel_config_with(
-        crate::config::load_effective_config().ok().as_ref(),
-        xai_grok_config::load_merged_requirements().as_ref(),
-        |name| std::env::var(name).ok(),
-        client,
-        EndpointsConfig::default().internal_otlp_consumed_standard_vars(),
-    )
+    None
 }
 /// Testable core of [`resolve_external_otel_config`]: all inputs injected so
 /// tests don't race on process env / disk.
@@ -3466,34 +3413,7 @@ pub(crate) fn apply_external_otel_remote_policy(
 /// deduplicate would leave only the `Relaxed` store and reopen an ARM
 /// visibility hole.
 pub fn apply_remote_settings_side_effects(settings: Option<&crate::util::config::RemoteSettings>) {
-    if let Some(s) = settings {
-        let origin_trusted = crate::util::is_prod_cli_chat_proxy_url(
-            &EndpointsConfig::from_effective_config().proxy_url(),
-        );
-        xai_grok_config::signed_policy::apply_remote_managed_config_signature_verification(
-            s.managed_config_signature_verification,
-            origin_trusted,
-        );
-    }
-    crate::util::config::cache_remote_mcp_startup_timeout_secs(
-        settings.and_then(|s| s.mcp_startup_timeout_secs),
-    );
-    crate::util::config::cache_remote_max_mcp_output_bytes(
-        settings.and_then(|s| s.max_mcp_output_bytes),
-    );
-    crate::util::config::cache_remote_auto_mode(settings.and_then(|s| s.auto_mode.clone()));
-    crate::util::config::cache_remote_remember_tool_approvals(
-        settings.and_then(|s| s.remember_tool_approvals),
-    );
-    crate::util::config::cache_remote_crash_handler_enabled(
-        settings.and_then(|s| s.crash_handler_enabled),
-    );
-    apply_external_otel_remote_policy(settings);
-    let image_normalize_cache_enabled = settings
-        .and_then(|r| r.image_normalize_cache_enabled)
-        .unwrap_or(false);
-    crate::session::normalize_cache::NormalizeCache::global()
-        .set_enabled(image_normalize_cache_enabled);
+    let _ = settings;
 }
 /// Read `env.<key>` from Claude-compat `managed_settings.json`. `Some(true)`
 /// indicates a force-off signal from a Mac-MDM-style admin policy.

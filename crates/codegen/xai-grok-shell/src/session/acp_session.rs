@@ -482,9 +482,9 @@ fn managed_gateway_error_to_tool_error(
     match error {
         crate::session::managed_mcp::ManagedMcpFetchError::Status { status, message } => {
             let detail = format!("Managed MCP gateway tool call failed: {message}");
-            let mut err = if status == reqwest::StatusCode::UNAUTHORIZED {
+            let mut err = if status == 401 {
                 xai_tool_runtime::ToolError::unauthorized(detail)
-            } else if status == reqwest::StatusCode::FORBIDDEN {
+            } else if status == 403 {
                 xai_tool_runtime::ToolError::permission_denied(detail)
             } else {
                 let tool_id = xai_tool_protocol::ToolId::new(caller)
@@ -495,12 +495,12 @@ fn managed_gateway_error_to_tool_error(
                 Some(serde_json::Value::Object(map)) => {
                     map.insert(
                         HTTP_STATUS_DETAILS_KEY.to_string(),
-                        serde_json::json!(status.as_u16()),
+                        serde_json::json!(status),
                     );
                 }
                 _ => {
                     err.details = Some(serde_json::json!({
-                        HTTP_STATUS_DETAILS_KEY: status.as_u16(),
+                        HTTP_STATUS_DETAILS_KEY: status,
                     }));
                 }
             }
@@ -509,7 +509,7 @@ fn managed_gateway_error_to_tool_error(
         crate::session::managed_mcp::ManagedMcpFetchError::Transport(e) => {
             xai_tool_runtime::ToolError::network_error(format!(
                 "Managed MCP gateway tool call failed: {}",
-                e.without_url()
+                e
             ))
         }
         crate::session::managed_mcp::ManagedMcpFetchError::NoAuth => {
@@ -523,7 +523,7 @@ mod managed_gateway_error_tests {
     use super::*;
     fn status_error(code: u16, message: &str) -> crate::session::managed_mcp::ManagedMcpFetchError {
         crate::session::managed_mcp::ManagedMcpFetchError::Status {
-            status: reqwest::StatusCode::from_u16(code).unwrap(),
+            status: code,
             message: message.to_string(),
         }
     }

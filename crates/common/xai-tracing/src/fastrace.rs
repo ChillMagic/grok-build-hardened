@@ -1,38 +1,24 @@
 use fastrace::prelude::*;
-use fastrace_opentelemetry::OpenTelemetryReporter;
-use opentelemetry::InstrumentationScope;
-use opentelemetry::KeyValue;
-use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_otlp::{ExporterBuildError, SpanExporter};
-use opentelemetry_sdk::Resource;
 use std::borrow::Cow;
-use std::iter;
 
-// Fastrace initialization
+#[derive(Debug)]
+pub struct TraceExportDisabled;
+
+impl std::fmt::Display for TraceExportDisabled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("OTLP trace export is removed in the privacy build")
+    }
+}
+
+impl std::error::Error for TraceExportDisabled {}
+
+/// Compatibility entry point. No reporter, client, channel, or worker exists.
 pub fn init_fastrace(
-    endpoint: String,
-    name: String,
-    resource_attributes: impl IntoIterator<Item = (String, String)>,
-) -> Result<(), ExporterBuildError> {
-    let exporter = SpanExporter::builder()
-        .with_tonic()
-        .with_endpoint(endpoint)
-        .with_protocol(opentelemetry_otlp::Protocol::Grpc)
-        .with_timeout(opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT)
-        .build()?;
-    let attributes = resource_attributes
-        .into_iter()
-        .chain(iter::once(("service.name".into(), name.clone())))
-        .map(|(k, v)| KeyValue::new(k, v));
-    let reporter = OpenTelemetryReporter::new(
-        exporter,
-        Cow::Owned(Resource::builder().with_attributes(attributes).build()),
-        InstrumentationScope::builder(name)
-            .with_version(env!("CARGO_PKG_VERSION"))
-            .build(),
-    );
-    fastrace::set_reporter(reporter, fastrace::collector::Config::default());
-    Ok(())
+    _endpoint: String,
+    _name: String,
+    _resource_attributes: impl IntoIterator<Item = (String, String)>,
+) -> Result<(), TraceExportDisabled> {
+    Err(TraceExportDisabled)
 }
 
 pub fn current_trace_id() -> Option<String> {

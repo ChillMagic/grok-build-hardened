@@ -458,6 +458,8 @@ fn fetch_remote_settings() -> Option<xai_grok_shell::util::config::RemoteSetting
     join_early_prefetch(xai_grok_shell::agent::models::start_early_prefetch(None))
 }
 async fn run_workspace_mgmt(args: WorkspaceMgmtArgs) -> Result<()> {
+    anyhow::bail!(xai_grok_shell::privacy_build::REMOVED_MESSAGE);
+
     if matches!(
         &args.command,
         WorkspaceMgmtCommand::Start(_)
@@ -2087,10 +2089,7 @@ async fn async_main(args: PagerArgs) -> Result<()> {
                 return Ok(());
             }
             Command::Setup { json } => {
-                init_tracing_simple("cli");
-                let _otel_guard = xai_grok_telemetry::otel_layer::otel_guard();
-                run_setup_command(json).await;
-                return Ok(());
+                anyhow::bail!(xai_grok_shell::privacy_build::REMOVED_MESSAGE);
             }
             Command::Mcp(mcp_args) => {
                 init_tracing_simple("cli");
@@ -2126,9 +2125,7 @@ async fn async_main(args: PagerArgs) -> Result<()> {
                 return xai_grok_pager::disk_usage_cmd::run(disk_usage_args);
             }
             Command::Workspace(workspace_args) => {
-                init_tracing_simple("cli");
-                let _otel_guard = xai_grok_telemetry::otel_layer::otel_guard();
-                return run_workspace_mgmt(workspace_args).await;
+                anyhow::bail!(xai_grok_shell::privacy_build::REMOVED_MESSAGE);
             }
             Command::Sessions(sessions_args) => {
                 init_tracing_simple("cli");
@@ -2138,22 +2135,14 @@ async fn async_main(args: PagerArgs) -> Result<()> {
                 return xai_grok_pager::sessions_cmd::run(sessions_args, &agent_config).await;
             }
             Command::Share(ref share_args) => {
-                init_tracing_simple("cli");
-                let _otel_guard = xai_grok_telemetry::otel_layer::otel_guard();
-                let agent_config = xai_grok_shell::config::load_agent_config_disk_only()
-                    .map_err(|e| anyhow::anyhow!("Failed to create agent config: {e}"))?;
-                return xai_grok_pager::share_cmd::run(share_args, &agent_config).await;
+                anyhow::bail!(xai_grok_shell::privacy_build::REMOVED_MESSAGE);
             }
             Command::Export(export_args) => {
                 init_tracing_simple("cli");
                 return xai_grok_pager::export_cmd::run(export_args);
             }
             Command::Trace(trace_args) => {
-                init_tracing_simple("cli");
-                let _otel_guard = xai_grok_telemetry::otel_layer::otel_guard();
-                let agent_config = xai_grok_shell::config::load_agent_config_disk_only()
-                    .map_err(|e| anyhow::anyhow!("Failed to create agent config: {e}"))?;
-                return xai_grok_pager::trace_cmd::run(trace_args, &agent_config).await;
+                anyhow::bail!(xai_grok_shell::privacy_build::REMOVED_MESSAGE);
             }
             Command::Memory(memory_args) => {
                 return xai_grok_pager::memory_cmd::run(memory_args);
@@ -2397,14 +2386,7 @@ fn build_update_config() -> UpdateConfig {
 /// Central gate for auto-update checks; add new suppression rules here,
 /// not at call sites.
 fn should_check_for_updates(no_auto_update_flag: bool) -> bool {
-    if cfg!(debug_assertions) {
-        return false;
-    }
-    if no_auto_update_flag {
-        return false;
-    }
-    !std::env::var_os("GROK_DISABLE_AUTOUPDATER")
-        .is_some_and(|v| env_flag_enabled(&v.to_string_lossy()))
+    false
 }
 /// Gate for the stdio agent's background auto-update: only the direct stdio
 /// agent, from the managed install. Other modes update in `run_agent_command`.
@@ -2472,6 +2454,8 @@ async fn run_update_command(
     trigger: auto_update::CliUpdateTrigger,
     base_update_config: &UpdateConfig,
 ) -> Result<()> {
+    anyhow::bail!(xai_grok_update::UPDATER_REMOVED_MESSAGE);
+
     if json && !check {
         anyhow::bail!("--json requires --check");
     }
