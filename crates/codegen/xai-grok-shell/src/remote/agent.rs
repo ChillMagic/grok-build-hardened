@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed cloud-sandbox client.
 
 use std::sync::Arc;

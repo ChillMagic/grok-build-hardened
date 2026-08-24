@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-network external OTEL facade for the privacy build.
 //!
 //! Exporter construction, HTTP/gRPC providers, redaction pipelines, and

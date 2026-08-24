@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Fail-closed replacement for the upstream repository-to-GitHub exporter.
 //!
 //! The original module initialized a repository, committed the project tree,

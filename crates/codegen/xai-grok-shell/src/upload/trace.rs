@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-upload trace compatibility facade.
 //!
 //! The upstream artifact collectors, repository/session archive builders,

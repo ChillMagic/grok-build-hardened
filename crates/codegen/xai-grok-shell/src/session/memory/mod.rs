@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Memory system shim.
 //!
 //! The memory "core engine" now lives in the standalone `xai-grok-memory`

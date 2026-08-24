@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Local-only tracing compatibility facade for the privacy build.
 //!
 //! Distributed trace propagation was removed with the upload/telemetry stack.

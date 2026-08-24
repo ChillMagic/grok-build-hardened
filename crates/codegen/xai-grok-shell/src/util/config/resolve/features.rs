@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 use crate::util::config::RemoteSettings;
 use toml::Value as TomlValue;
 

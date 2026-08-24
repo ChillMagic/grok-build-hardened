@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Remote storage client for the backend.
 
 pub mod agent;

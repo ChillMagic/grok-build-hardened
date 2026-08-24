@@ -1,0 +1,43 @@
+# Added by the grok-build-hardened project.
+
+name: Upstream watch
+
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Detect a new official commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the hardened repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Compare the approved base with official main
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .hardened/upstream.env
+          latest="$(git ls-remote "$UPSTREAM_REPOSITORY" "refs/heads/$UPSTREAM_BRANCH" | awk '{print $1}')"
+          if [[ -z "$latest" ]]; then
+            printf 'Could not resolve official upstream.\n' >&2
+            exit 1
+          fi
+          {
+            printf '### Grok Build upstream status\n\n'
+            printf -- '- Approved: `%s`\n' "$UPSTREAM_COMMIT"
+            printf -- '- Official: `%s`\n' "$latest"
+          } >>"$GITHUB_STEP_SUMMARY"
+          if [[ "$latest" != "$UPSTREAM_COMMIT" ]]; then
+            printf 'New upstream source requires a manual audit; no update was applied.\n' >&2
+            exit 1
+          fi
+          printf 'Approved source is current.\n'

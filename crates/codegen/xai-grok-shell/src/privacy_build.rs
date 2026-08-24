@@ -1,3 +1,4 @@
+// Added by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Compile-time privacy invariants for the no-upload/no-cloud-control fork.
 //!
 //! These values deliberately have no environment, config, CLI, managed, or

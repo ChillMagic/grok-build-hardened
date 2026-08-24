@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Standalone workspace ToolServer for remote sandboxes.
 //!
 //! Reads OIDC credentials from `~/.grok/auth.json`, connects to a

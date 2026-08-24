@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Inert compatibility facade for removed cloud relay session mirroring.
 
 use crate::agent::relay::RelayConfig;

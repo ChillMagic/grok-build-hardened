@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! xAI Computer Hub — wire-protocol types.
 //!
 //! Identifier newtypes, registration payloads, capabilities, hook events,

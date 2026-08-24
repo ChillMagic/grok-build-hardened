@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Inert facade for the removed vendor-managed MCP gateway.
 //!
 //! Local, project, user, and plugin MCP servers are implemented elsewhere and

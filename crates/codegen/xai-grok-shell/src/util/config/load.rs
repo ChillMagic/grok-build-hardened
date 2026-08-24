@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 use super::mcp::*;
 use toml::Value as TomlValue;
 /// Resolve a bool from an optional env var > config.toml `[section] key` > false.

@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Fail-closed HTTP hook runner for the privacy build.
 //!
 //! The upstream implementation serializes hook event envelopes and POSTs them

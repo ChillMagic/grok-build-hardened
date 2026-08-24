@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Tool-server and harness SDK.
 //!
 //! Single crate hosting both the tool-server runtime and the

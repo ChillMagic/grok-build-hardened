@@ -1,0 +1,64 @@
+# Added by the grok-build-hardened project.
+
+name: Hardening invariants
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*-hardened.*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hardening-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-audit:
+    name: Fail-closed source audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure read-only upstream identity
+        run: ./scripts/hardening/setup-remotes.sh
+      - name: Verify hardening invariants
+        run: ./scripts/hardening/check.sh
+
+  compile:
+    name: Compile (${{ matrix.os }})
+    needs: source-audit
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure read-only upstream identity
+        run: ./scripts/hardening/setup-remotes.sh
+      - name: Install protobuf compiler on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler ripgrep
+      - name: Install protobuf compiler on macOS
+        if: runner.os == 'macOS'
+        run: brew install protobuf ripgrep
+      - name: Select the repository-pinned Rust toolchain
+        run: rustup show
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Compile the hardened binary
+        run: cargo check --locked -p xai-grok-pager-bin

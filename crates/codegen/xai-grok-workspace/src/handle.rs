@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! [`WorkspaceHandle`] -- public handle to a workspace instance.
 use fastrace::future::FutureExt as _;
 use fastrace::local::LocalSpan;

@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 pub mod activity;
 pub mod app;
 pub mod auth_method;

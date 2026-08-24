@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Local-only version metadata for the privacy build.
 //!
 //! All upstream network version discovery and package-manager execution was

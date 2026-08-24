@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 use crate::agent::auth_method::ModelByok;
 use crate::agent::model_providers::{
     ModelProviderConfig, auth_config_issues, model_provider_auth_name, parse_model_providers,

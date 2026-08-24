@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Compile-time-disabled external telemetry configuration facade.
 //!
 //! Endpoint parsing, environment activation, credential loading, and exporter

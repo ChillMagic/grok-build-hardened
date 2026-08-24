@@ -1,3 +1,4 @@
+# Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 [package]
 license = "Apache-2.0"
 name = "xai-grok-bundle"

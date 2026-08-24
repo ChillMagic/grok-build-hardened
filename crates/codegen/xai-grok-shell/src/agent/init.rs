@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Agent bootstrap and lifecycle hooks.
 //!
 //! [`bootstrap`] runs the full init sequence (config resolution, process

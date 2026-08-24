@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 pub mod changelog;
 pub mod event_id;
 pub mod grok_home;

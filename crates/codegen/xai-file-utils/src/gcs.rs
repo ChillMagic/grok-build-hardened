@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Fail-closed storage facade for the privacy build.
 //!
 //! The GCS, proxy-storage, signed-URL, and multipart implementations are

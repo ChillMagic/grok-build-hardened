@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Inert compatibility facade for the removed grok.com WebSocket relay.
 //!
 //! Upstream used this module for server-initiated remote control and live

@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed feedback/session archive builder.
 
 pub(crate) struct ArchiveCaps {

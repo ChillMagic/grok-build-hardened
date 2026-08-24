@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Concrete `MemoryBackend` implementation using hybrid search.
 //!
 //! `MemoryBackendImpl` combines FTS5 keyword search with optional vector

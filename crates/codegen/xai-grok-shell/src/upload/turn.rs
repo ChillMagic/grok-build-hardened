@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-upload turn compatibility facade.
 
 use crate::session::repo_changes::TraceExportConfig;

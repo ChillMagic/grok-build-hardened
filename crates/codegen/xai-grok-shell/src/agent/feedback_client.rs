@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-network feedback/signals compatibility facade.
 //!
 //! Wire data types remain for local state compatibility. Every transport

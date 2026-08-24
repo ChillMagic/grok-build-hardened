@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Read-only/no-network compatibility facade for removed cloud-control and
 //! remote session features.
 //!

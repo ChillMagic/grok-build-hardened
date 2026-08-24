@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Skill and command discovery for system prompt injection.
 //!
 //! Orchestrates priority-based discovery across local, repo, optional

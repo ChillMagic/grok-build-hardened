@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Fail-closed S3 facade for the privacy build.
 //!
 //! Direct uploads, existence probes, and presigned PUT/GET generation are

@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-emission telemetry session facade for the privacy build.
 
 use std::sync::Arc;

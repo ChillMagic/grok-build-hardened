@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Local-only changelog reader for the privacy build.
 //!
 //! The upstream manager downloads release notes from a CDN at startup. Remote

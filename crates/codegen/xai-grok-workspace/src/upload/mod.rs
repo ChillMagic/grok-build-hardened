@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Privacy-build compatibility facade.
 //!
 //! The upstream workspace upload implementation (proxy credentials, queue

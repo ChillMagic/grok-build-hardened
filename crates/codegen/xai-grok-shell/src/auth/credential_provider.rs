@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 use crate::auth::AuthManager;
 use crate::util::grok_auth_credentials::GrokAuthCredentials;
 use reqwest::RequestBuilder;

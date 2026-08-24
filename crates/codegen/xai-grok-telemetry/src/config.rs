@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Inert telemetry configuration facade for the privacy build.
 //!
 //! Legacy fields remain deserializable so existing user configuration does

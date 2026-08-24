@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Tool-server runtime: builder, handler trait, and inbound dispatch loop.
 //!
 //! A [`ToolServer`] is the SDK-side counterpart to a server-side

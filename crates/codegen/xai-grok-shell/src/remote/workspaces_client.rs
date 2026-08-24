@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed grok.com workspace client.
 
 use std::sync::Arc;

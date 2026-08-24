@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-network replacement for the cli-chat-proxy storage client.
 
 use std::path::Path;

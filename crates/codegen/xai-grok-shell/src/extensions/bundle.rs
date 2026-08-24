@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Inert facade for removed server-delivered agents, skills, roles, personas,
 //! and workflows.
 

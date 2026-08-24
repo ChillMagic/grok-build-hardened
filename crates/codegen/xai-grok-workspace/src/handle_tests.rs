@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 use super::*;
 use crate::capability::CapabilityMode;
 use crate::config::{AgentSessionConfig, DEFAULT_EVENT_BUFFER_CAPACITY, WorkspaceConfig};

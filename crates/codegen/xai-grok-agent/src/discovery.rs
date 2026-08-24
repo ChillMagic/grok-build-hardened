@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Agent definition file discovery.
 //!
 //! Searches `.grok/agents/` and `.claude/agents/` from cwd to repo root,

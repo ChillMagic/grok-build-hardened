@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! One-child supervisor for the in-sandbox preview-proxy.
 //!
 //! After the workspace-server self-daemonizes (see [`crate::daemonize`]) it

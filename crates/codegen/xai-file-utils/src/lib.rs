@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Compatibility types for local data handling in the privacy build.
 
 /// This fork is intentionally compiled without passive/background data uploads.

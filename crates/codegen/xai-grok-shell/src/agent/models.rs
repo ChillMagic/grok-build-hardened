@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Model fetching, resolution, and management.
 
 use std::future::Future;

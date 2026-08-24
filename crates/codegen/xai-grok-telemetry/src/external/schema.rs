@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed external-record mapping facade.
 //!
 //! Upstream converted prompts, tool details, session metadata, and product

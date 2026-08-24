@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-spill, no-worker upload queue facade for the privacy build.
 //!
 //! The upstream persistent queue, disk snapshots, retry worker, auth recovery,

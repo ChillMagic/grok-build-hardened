@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Offline-only search-tool bundling for the privacy build.
 //!
 //! Nothing is downloaded. Explicit local paths may be embedded; when absent,

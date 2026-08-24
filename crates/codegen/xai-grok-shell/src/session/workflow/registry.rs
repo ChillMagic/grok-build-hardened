@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 use std::collections::BTreeMap;
 use std::io::{self, Read, Write};
 use std::path::{Component, Path, PathBuf};

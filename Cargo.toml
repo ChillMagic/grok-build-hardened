@@ -1,3 +1,4 @@
+# Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 # Auto-generated workspace root. Prefer editing per-crate Cargo.toml files.
 
 [patch.crates-io]

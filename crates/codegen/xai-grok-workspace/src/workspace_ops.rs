@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! [`WorkspaceOps`] — dual-mode workspace operations handle.
 //!
 //! Two modes:

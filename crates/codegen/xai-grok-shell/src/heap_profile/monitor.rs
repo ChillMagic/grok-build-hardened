@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Inert heap-profile monitor for the privacy build.
 //!
 //! Upstream could create jemalloc dumps and upload the dump plus metadata.

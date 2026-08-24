@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Disabled feedback, trace-attachment, and cloud review-comment endpoints.
 
 use agent_client_protocol as acp;

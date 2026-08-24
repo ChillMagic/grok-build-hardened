@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Closed enumeration of every JSON-RPC method on the wire.
 //!
 //! Each variant is defined once in the [`define_methods!`] macro invocation

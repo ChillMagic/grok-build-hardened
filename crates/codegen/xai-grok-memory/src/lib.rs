@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Memory system for cross-session knowledge persistence.
 //!
 //! This crate provides a markdown-based memory storage layer that allows

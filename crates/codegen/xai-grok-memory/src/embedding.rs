@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Local-only memory embedding facade for the privacy build.
 //!
 //! The API embedding client, credential middleware, request construction,

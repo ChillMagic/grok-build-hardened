@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 pub mod auto_update;
 pub mod version;
 mod version_policy;

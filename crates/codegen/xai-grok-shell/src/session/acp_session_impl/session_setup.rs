@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Session initialization concern for `SessionActor`: `initialize`, prefix
 //! readiness, skills reload and reminders, session info, and model-metadata
 //! refresh.

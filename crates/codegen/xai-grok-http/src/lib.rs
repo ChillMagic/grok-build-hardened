@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! HTTP clients for the application.
 //!
 //! Building a `reqwest::Client` is expensive (~95ms) because it loads

@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! `ConfigLayers` and the layered config merge / overlay / campaign policy.
 //!
 //! The layer *files* are read by [`crate::loader`]; this module owns how those

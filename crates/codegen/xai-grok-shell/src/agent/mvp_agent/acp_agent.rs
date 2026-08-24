@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 #![cfg_attr(rustfmt, rustfmt::skip)]
 #![allow(unused_imports)]
 //! [`acp::Agent`] trait implementation for [`MvpAgent`].

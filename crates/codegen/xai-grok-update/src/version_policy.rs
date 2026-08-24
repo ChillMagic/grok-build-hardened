@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Remote version policy is not part of the privacy build.
 
 /// Deliberate no-op: neither a server nor managed configuration may remotely

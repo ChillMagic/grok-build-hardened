@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed server-delivered chat-mode catalog.
 
 use std::sync::Arc;

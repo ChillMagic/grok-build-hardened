@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-network session-registry compatibility facade.
 //!
 //! The upstream client registered local sessions, uploaded replica metadata,

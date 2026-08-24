@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Telemetry engine for Grok Build sessions: product events + Mixpanel emission +
 //! Sentry error reporting + OpenTelemetry tracing + structured unified log.
 //!

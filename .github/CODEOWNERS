@@ -1,0 +1,8 @@
+# Added by the grok-build-hardened project.
+
+* @ChillMagic
+/.hardened/ @ChillMagic
+/scripts/hardening/ @ChillMagic
+/.github/workflows/ @ChillMagic
+/MODIFICATIONS.md @ChillMagic
+/UPSTREAM.md @ChillMagic

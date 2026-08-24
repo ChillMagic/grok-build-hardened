@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Per-method `params` and `result` payload structs.
 //!
 //! These types ride inside a [`crate::JsonRpcRequest`] /

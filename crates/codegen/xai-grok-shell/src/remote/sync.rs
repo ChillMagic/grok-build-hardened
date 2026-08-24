@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed remote session synchronization worker.
 
 use crate::remote::client::BackendClient;

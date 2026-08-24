@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 #![allow(clippy::await_holding_refcell_ref)]
 #![allow(clippy::arc_with_non_send_sync)]
 //! Session actor implementation for the MVP ACP agent.

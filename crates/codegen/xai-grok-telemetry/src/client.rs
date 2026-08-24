@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-network telemetry facade for the privacy build.
 //!
 //! The upstream Mixpanel and product-event sender is intentionally deleted.

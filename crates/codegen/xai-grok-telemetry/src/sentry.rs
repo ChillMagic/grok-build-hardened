@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-network Sentry facade for the privacy build.
 
 pub struct Config {

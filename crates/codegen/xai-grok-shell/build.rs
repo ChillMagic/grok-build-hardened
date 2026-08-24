@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Offline-only build script for the privacy build.
 //!
 //! Upstream downloaded ripgrep during release builds. This build never opens

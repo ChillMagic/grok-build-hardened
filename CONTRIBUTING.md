@@ -1,19 +1,35 @@
+<!-- Modified by the grok-build-hardened project; see /MODIFICATIONS.md. -->
+
 # Contributing
 
-This repository does **not** accept external pull requests or unsolicited
-patches.
+Contributions to the privacy-hardening layer, audit tooling, documentation,
+and upstream compatibility are welcome.
 
-SpaceXAI develops this software internally. The public tree is published for
-source transparency and local builds under the terms of the Apache License,
-Version 2.0 (see [`LICENSE`](LICENSE)).
+Before opening a pull request:
 
-## Security reports
+1. Base the change on this repository's `main` branch.
+2. Do not merge an unreviewed upstream revision or update the approved base as
+   part of an unrelated change.
+3. Run `./scripts/hardening/check.sh`.
+4. Run `cargo fmt --all -- --check` and the relevant Cargo tests/checks.
+5. Explain whether the change affects model requests, repository data,
+   telemetry, remote policy/control, updates, plugins, MCP, or media tools.
+6. Add a prominent modification notice to every upstream file you change and
+   update `MODIFICATIONS.md` when the privacy boundary changes.
 
-Please report security issues through the process described in
-[`SECURITY.md`](SECURITY.md). Do not open a public issue for vulnerabilities.
+Pull requests that restore passive uploads, network telemetry, remote
+configuration/control, cloud session synchronization, or executable
+self-update code will not be accepted.
 
-## Licensing of this source
+## Upstream rebases
 
-By downloading or using this source, you agree that your use is governed by
-the Apache License, Version 2.0. No contributor license agreement is offered
-because external contributions are not accepted.
+Upstream rebases are maintainer operations. Follow [`UPSTREAM.md`](UPSTREAM.md)
+and keep the rebase, security adaptation, audit approval, and release tag easy
+to review. A successful Git rebase is not proof that the privacy properties
+still hold.
+
+## Licensing
+
+By submitting a contribution, you agree to license it under Apache License
+2.0, the license used by the upstream project and this fork. Retain all
+applicable copyright, attribution, trademark, and third-party notices.

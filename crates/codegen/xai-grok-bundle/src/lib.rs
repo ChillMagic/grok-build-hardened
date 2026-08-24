@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Local compatibility helpers for the privacy build.
 //!
 //! Server bundle payload parsing, archive extraction, manifest installation,

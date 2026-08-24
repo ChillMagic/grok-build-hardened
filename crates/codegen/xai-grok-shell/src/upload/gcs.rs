@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-upload shell compatibility adapter.
 
 use crate::auth::AuthManager;

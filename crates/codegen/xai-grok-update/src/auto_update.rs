@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Privacy-build replacement for the upstream updater.
 //!
 //! The upstream implementation is intentionally deleted.  This module keeps

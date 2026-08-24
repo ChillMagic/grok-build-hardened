@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 pub mod reloader;
 pub mod watcher;
 use crate::bundle;

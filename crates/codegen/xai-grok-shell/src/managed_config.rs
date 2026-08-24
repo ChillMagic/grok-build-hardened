@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! No-network managed-configuration facade for the privacy build.
 //!
 //! The upstream fetcher, response parser, signature-policy machinery,

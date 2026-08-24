@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed pull-on-miss cloud session hydration.
 
 use crate::remote::client::{BackendClient, BackendError};

@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 //! Removed server-delivered product Skills catalog.
 //!
 //! Local user-installed skills remain available through local discovery. This

@@ -1,3 +1,4 @@
+// Modified by the grok-build-hardened project; see /MODIFICATIONS.md.
 #![allow(
     unused_imports,
     unused_variables,
