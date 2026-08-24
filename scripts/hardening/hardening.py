@@ -615,6 +615,49 @@ def build_offline(metadata: Mapping[str, str]) -> None:
     print(f"  {version_output}")
 
 
+def github_annotation_escape(message: str) -> str:
+    return (
+        message.replace("%", "%25")
+        .replace("\r", "%0D")
+        .replace("\n", "%0A")
+    )
+
+
+def cargo_check() -> None:
+    for name in ("cargo", "protoc"):
+        require_command(name)
+
+    environment = os.environ.copy()
+    environment["PROTOC"] = str(Path(shutil.which("protoc") or "").resolve())
+    environment["CARGO_TERM_COLOR"] = "never"
+    command = (
+        "cargo",
+        "check",
+        "--manifest-path",
+        REPO_ROOT / "Cargo.toml",
+        "--locked",
+        "-p",
+        "xai-grok-pager-bin",
+    )
+    completed = subprocess.run(
+        [str(part) for part in command],
+        cwd=REPO_ROOT,
+        env=environment,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    output = completed.stdout or ""
+    print(output, end="" if output.endswith("\n") or not output else "\n")
+    if completed.returncode != 0:
+        tail = "\n".join(output.splitlines()[-60:])
+        if os.environ.get("GITHUB_ACTIONS") == "true" and tail:
+            escaped = github_annotation_escape(tail)
+            print(f"::error title=Cross-platform Cargo check failed::{escaped}")
+        fail(f"command failed with exit code {completed.returncode}: {command_text(command)}")
+
+
 def platform_name() -> str:
     if sys.platform.startswith("linux"):
         return "linux"
@@ -772,6 +815,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("setup-remotes", help="make upstream read-only and origin push-only")
     subparsers.add_parser("check", help="verify all reviewed source hardening invariants")
     subparsers.add_parser("build-offline", help="audit, build offline, and test runtime blocks")
+    subparsers.add_parser("cargo-check", help="compile and expose portable CI diagnostics")
 
     package_parser = subparsers.add_parser("package", help="create a native release archive")
     package_parser.add_argument("--version", required=True)
@@ -801,6 +845,8 @@ def main(arguments: Sequence[str] | None = None) -> int:
             check_hardening(metadata)
         elif args.command == "build-offline":
             build_offline(metadata)
+        elif args.command == "cargo-check":
+            cargo_check()
         elif args.command == "package":
             package_release(args.version, args.output_dir, args.github_output)
         elif args.command == "validate-release-tag":

@@ -70,4 +70,4 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Compile the hardened binary
-        run: cargo check --locked -p xai-grok-pager-bin
+        run: ${{ matrix.python }} scripts/hardening/hardening.py cargo-check
