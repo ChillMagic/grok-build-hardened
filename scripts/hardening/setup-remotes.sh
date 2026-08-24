@@ -28,6 +28,7 @@ else
     esac
 fi
 
+git -C "$REPO_ROOT" remote set-url --push upstream DISABLED
 git -C "$REPO_ROOT" config remote.pushDefault origin
 git -C "$REPO_ROOT" config rerere.enabled true
 git -C "$REPO_ROOT" config rerere.autoupdate true

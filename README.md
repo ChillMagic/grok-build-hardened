@@ -69,6 +69,9 @@ check remains blocked until a maintainer audits the new source and explicitly
 updates `.hardened/upstream.env` and `.hardened/source-paths.tsv`. The complete
 workflow is documented in [`UPSTREAM.md`](UPSTREAM.md).
 
+Recommended GitHub rules, private vulnerability reporting, and release-tag
+protection are listed in [`REPOSITORY-SETTINGS.md`](REPOSITORY-SETTINGS.md).
+
 Release tags use:
 
 ```text

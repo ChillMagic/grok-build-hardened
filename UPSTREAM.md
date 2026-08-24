@@ -9,7 +9,8 @@ official project:
 ```bash
 git remote -v
 # origin    https://github.com/ChillMagic/grok-build-hardened.git
-# upstream  https://github.com/xai-org/grok-build.git
+# upstream  https://github.com/xai-org/grok-build.git (fetch)
+# upstream  DISABLED (push)
 ```
 
 Configure or validate these local remotes idempotently with:
@@ -37,7 +38,8 @@ Start from a clean `main` branch:
 ./scripts/hardening/rebase-upstream.sh upstream/main
 ```
 
-The script creates a local `backup/pre-rebase-*` tag and then runs:
+The script first requires local `main` to exactly match `origin/main`, records
+that published SHA, creates a local `backup/pre-rebase-*` tag, and then runs:
 
 ```text
 git rebase --onto <new-upstream> <approved-old-upstream> main
@@ -94,13 +96,21 @@ Only after the audit:
 
 ```bash
 ./scripts/hardening/tag-release.sh
-git push origin main
+git push --force-with-lease=refs/heads/main:<old-published-SHA> origin main
 git push origin v<upstream-version>-hardened.<revision>
 ```
 
-The tag script refuses a dirty tree, a stale base, an unexpected tag name, or
-a failed hardening check. It creates an annotated local tag; pushing remains
-an explicit separate action.
+`rebase-upstream.sh` prints the exact force-with-lease command containing the
+old published SHA. Use that command verbatim after the audit. A plain push
+cannot update a publicly rebased branch; an unleased force push is forbidden.
+
+The tag script refuses a dirty tree, stale base, unexpected tag name, or
+failed hardening check. It creates an annotated local tag; pushing remains an
+explicit separate action.
 
 Never force-push a published release tag. A correction on the same upstream
 version receives a new hardening revision.
+
+Repository rules must permit the owner to perform the narrowly leased upstream
+rebase while rejecting branch deletion and unreviewed changes. See
+[`REPOSITORY-SETTINGS.md`](REPOSITORY-SETTINGS.md).

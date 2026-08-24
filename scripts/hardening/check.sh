@@ -47,6 +47,10 @@ case "$upstream_url" in
     *) hardening_fail "remote 'upstream' must point to ${UPSTREAM_REPOSITORY}" ;;
 esac
 
+upstream_push_url="$(git -C "$REPO_ROOT" remote get-url --push upstream 2>/dev/null || true)"
+[[ "$upstream_push_url" == DISABLED ]] \
+    || hardening_fail "upstream push URL must be DISABLED to prevent accidental official-repository pushes"
+
 origin_url="$(git -C "$REPO_ROOT" remote get-url --push origin 2>/dev/null || true)"
 [[ -n "$origin_url" ]] || hardening_fail "remote 'origin' is missing"
 case "$origin_url" in

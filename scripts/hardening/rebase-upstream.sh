@@ -21,8 +21,13 @@ case "$upstream_url" in
 esac
 
 git -C "$REPO_ROOT" fetch upstream "$UPSTREAM_BRANCH" --tags
+git -C "$REPO_ROOT" fetch origin "$branch"
 target_ref="${1:-upstream/${UPSTREAM_BRANCH}}"
 target_commit="$(git -C "$REPO_ROOT" rev-parse --verify "${target_ref}^{commit}")"
+published_head="$(git -C "$REPO_ROOT" rev-parse "refs/remotes/origin/${branch}^{commit}")"
+local_head="$(git -C "$REPO_ROOT" rev-parse "HEAD^{commit}")"
+[[ "$published_head" == "$local_head" ]] \
+    || hardening_fail "local main must exactly match origin/main before rebasing; publish or reconcile local work first"
 
 git -C "$REPO_ROOT" merge-base --is-ancestor "$UPSTREAM_COMMIT" HEAD \
     || hardening_fail "current branch is not based on approved commit ${UPSTREAM_COMMIT}"
@@ -51,3 +56,5 @@ printf 'The hardening check must fail until a manual source audit updates:\n'
 printf '  .hardened/upstream.env\n'
 printf '  .hardened/source-paths.tsv\n'
 printf 'Follow UPSTREAM.md before committing or tagging a release.\n'
+printf 'After approval, publish main with this exact lease:\n'
+printf '  git push --force-with-lease=refs/heads/main:%s origin main\n' "$published_head"

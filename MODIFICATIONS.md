@@ -61,3 +61,10 @@ This is an unofficial community fork and is not affiliated with, endorsed by,
 or supported by xAI or SpaceXAI. Upstream product names are used only for
 identification and attribution. Official logos are intentionally not used in
 the fork README or release branding.
+
+## Repository operational hardening
+
+The maintenance tools configure `origin` as the only push destination and set
+the official `upstream` push URL to `DISABLED`. Public rebases use an exact
+`--force-with-lease` bound to the previously fetched `origin/main` SHA. Release
+tags are never moved or force-pushed.
