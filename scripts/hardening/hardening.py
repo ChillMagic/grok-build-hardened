@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import traceback
 import zipfile
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
@@ -861,6 +862,13 @@ def main(arguments: Sequence[str] | None = None) -> int:
         if os.environ.get("GITHUB_ACTIONS") == "true":
             escaped = github_annotation_escape(message)
             print(f"::error title=Hardening gate failed::{escaped}")
+        return 1
+    except Exception:
+        details = traceback.format_exc()
+        print(details, file=sys.stderr)
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            escaped = github_annotation_escape(details)
+            print(f"::error title=Unexpected hardening exception::{escaped}")
         return 1
     return 0
 
