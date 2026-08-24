@@ -13,7 +13,7 @@ hardening_require_clean_tree
 branch="$(hardening_current_branch)"
 [[ "$branch" == main ]] || hardening_fail "release tags may be created only from main"
 
-expected_tag="v${UPSTREAM_VERSION}-hardened.${HARDENED_REVISION}"
+expected_tag="$(hardening_release_tag)"
 requested_tag="${1:-$expected_tag}"
 [[ "$requested_tag" == "$expected_tag" ]] \
     || hardening_fail "expected tag ${expected_tag}, received ${requested_tag}"

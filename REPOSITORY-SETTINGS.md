@@ -51,7 +51,7 @@ to the previously fetched remote SHA; never use an unleased `--force`.
 
 ## Tag ruleset
 
-Create a tag ruleset targeting `v*-hardened.*`:
+Create a tag ruleset targeting `v*-hardened*`:
 
 - Block tag deletion.
 - Block tag updates.

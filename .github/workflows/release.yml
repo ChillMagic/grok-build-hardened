@@ -1,0 +1,176 @@
+# Added by the grok-build-hardened project.
+
+name: Release hardened binaries
+
+on:
+  push:
+    tags:
+      - 'v*-hardened'
+      - 'v*-hardened.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing annotated release tag to build
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event_name }}-${{ github.ref }}-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure read-only upstream identity
+        run: ./scripts/hardening/setup-remotes.sh
+      - name: Validate tag and hardening invariants
+        id: release
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          source scripts/hardening/common.sh
+          expected_tag="$(hardening_release_tag)"
+          [[ "$REQUESTED_TAG" == "$expected_tag" ]] || {
+            printf 'Expected tag %s, received %s\n' "$expected_tag" "$REQUESTED_TAG" >&2
+            exit 1
+          }
+          [[ "$(git cat-file -t "refs/tags/$REQUESTED_TAG")" == tag ]] || {
+            printf 'Release tag must be annotated: %s\n' "$REQUESTED_TAG" >&2
+            exit 1
+          }
+          [[ "$(git rev-parse HEAD)" == "$(git rev-parse "refs/tags/$REQUESTED_TAG^{commit}")" ]] || {
+            printf 'Checked-out commit does not match tag %s\n' "$REQUESTED_TAG" >&2
+            exit 1
+          }
+          ./scripts/hardening/check.sh
+          printf 'tag=%s\n' "$REQUESTED_TAG" >>"$GITHUB_OUTPUT"
+          printf 'version=%s\n' "${REQUESTED_TAG#v}" >>"$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure read-only upstream identity
+        run: ./scripts/hardening/setup-remotes.sh
+      - name: Install build prerequisites on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler ripgrep
+      - name: Install build prerequisites on macOS
+        if: runner.os == 'macOS'
+        run: brew install protobuf ripgrep
+      - name: Select the repository-pinned Rust toolchain
+        run: rustup show
+      - name: Fetch locked Rust dependencies
+        run: cargo fetch --locked
+      - name: Audit and build with network disabled
+        run: ./scripts/hardening/build-offline.sh
+      - name: Package binary and notices
+        id: package
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          case "$(uname -s)" in
+            Linux) platform=linux ;;
+            Darwin) platform=macos ;;
+            *) printf 'Unsupported operating system\n' >&2; exit 1 ;;
+          esac
+          case "$(uname -m)" in
+            x86_64|amd64) architecture=x86_64 ;;
+            arm64|aarch64) architecture=aarch64 ;;
+            *) printf 'Unsupported architecture\n' >&2; exit 1 ;;
+          esac
+          package="grok-build-hardened-${RELEASE_VERSION}-${platform}-${architecture}"
+          package_dir="dist/$package"
+          mkdir -p "$package_dir/third_party"
+          install -m 0755 target/hardened/release/xai-grok-pager "$package_dir/grok"
+          install -m 0644 LICENSE THIRD-PARTY-NOTICES README.md MODIFICATIONS.md RELEASE.md "$package_dir/"
+          install -m 0644 third_party/NOTICE "$package_dir/third_party/NOTICE"
+          tar -C dist -czf "dist/$package.tar.gz" "$package"
+          printf 'archive=%s\n' "dist/$package.tar.gz" >>"$GITHUB_OUTPUT"
+      - name: Upload packaged binary
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: release-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ steps.package.outputs.archive }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish immutable GitHub Release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out release notes from the tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Download packaged binaries
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Create checksums and GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          archives=(dist/*.tar.gz)
+          [[ "${#archives[@]}" -eq 2 ]] || {
+            printf 'Expected two platform archives, found %s\n' "${#archives[@]}" >&2
+            exit 1
+          }
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            printf 'Release already exists and will not be modified: %s\n' "$RELEASE_TAG" >&2
+            exit 1
+          fi
+          (
+            cd dist
+            sha256sum -- *.tar.gz >SHA256SUMS
+          )
+          gh release create "$RELEASE_TAG" \
+            "${archives[@]}" dist/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "grok-build-hardened $RELEASE_VERSION" \
+            --notes-file RELEASE.md

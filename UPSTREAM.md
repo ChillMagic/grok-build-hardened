@@ -69,8 +69,9 @@ Only after the audit:
 
 1. Update `UPSTREAM_COMMIT` and `UPSTREAM_VERSION` in
    `.hardened/upstream.env`.
-2. Set `HARDENED_REVISION=1` for a new upstream version, or increment it for a
-   hardening-only release on the same version.
+2. Set `HARDENED_REVISION=0` for a new upstream version. If a published
+   hardened release needs a correction without changing the upstream base,
+   set it to `1`, then increment it for later corrections.
 3. Regenerate `.hardened/source-paths.tsv` from the reviewed diff:
 
    ```bash
@@ -97,7 +98,7 @@ Only after the audit:
 ```bash
 ./scripts/hardening/tag-release.sh
 git push --force-with-lease=refs/heads/main:<old-published-SHA> origin main
-git push origin v<upstream-version>-hardened.<revision>
+git push origin v<upstream-version>-hardened[.<correction>]
 ```
 
 `rebase-upstream.sh` prints the exact force-with-lease command containing the
@@ -108,8 +109,9 @@ The tag script refuses a dirty tree, stale base, unexpected tag name, or
 failed hardening check. It creates an annotated local tag; pushing remains an
 explicit separate action.
 
-Never force-push a published release tag. A correction on the same upstream
-version receives a new hardening revision.
+Never force-push a published release tag. The first audited release for an
+upstream version has no numeric suffix; a correction on the same upstream
+version receives `.1`, followed by `.2` and so on.
 
 Repository rules must permit the owner to perform the narrowly leased upstream
 rebase while rejecting branch deletion and unreviewed changes. See

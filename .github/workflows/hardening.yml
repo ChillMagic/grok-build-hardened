@@ -5,7 +5,7 @@ name: Hardening invariants
 on:
   push:
     branches: [main]
-    tags: ['v*-hardened.*']
+    tags: ['v*-hardened', 'v*-hardened.*']
   pull_request:
     branches: [main]
   workflow_dispatch:

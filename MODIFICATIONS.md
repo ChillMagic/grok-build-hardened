@@ -11,7 +11,7 @@ Approved upstream base:
 - Repository: `https://github.com/xai-org/grok-build.git`
 - Commit: `07b2f7144fd5c5c9d3dd1966937a87852d2dbdb8`
 - Upstream package version: `1.0.8`
-- First hardened release: `v1.0.8-hardened.1`
+- First hardened release: `v1.0.8-hardened`
 
 Files derived from upstream and changed by this project carry a prominent
 notice in their first line. Deleted and added source paths are recorded by

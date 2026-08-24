@@ -41,3 +41,11 @@ source "$HARDENING_METADATA"
 : "${UPSTREAM_COMMIT:?missing UPSTREAM_COMMIT}"
 : "${UPSTREAM_VERSION:?missing UPSTREAM_VERSION}"
 : "${HARDENED_REVISION:?missing HARDENED_REVISION}"
+
+hardening_release_tag() {
+    if [[ "$HARDENED_REVISION" == 0 ]]; then
+        printf 'v%s-hardened\n' "$UPSTREAM_VERSION"
+    else
+        printf 'v%s-hardened.%s\n' "$UPSTREAM_VERSION" "$HARDENED_REVISION"
+    fi
+}

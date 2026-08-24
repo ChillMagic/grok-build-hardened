@@ -75,10 +75,13 @@ protection are listed in [`REPOSITORY-SETTINGS.md`](REPOSITORY-SETTINGS.md).
 Release tags use:
 
 ```text
-v<upstream-version>-hardened.<revision>
+v<upstream-version>-hardened
+v<upstream-version>-hardened.<correction>
 ```
 
-For example: `v1.0.8-hardened.1`.
+The first audited release for an upstream version has no numeric suffix, for
+example `v1.0.8-hardened`. Corrections on that same upstream source start at
+`.1`; a new upstream version resets to the suffix-free form.
 
 ## Contributing
 

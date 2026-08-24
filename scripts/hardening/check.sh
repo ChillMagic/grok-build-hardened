@@ -33,8 +33,8 @@ forbid_regex() {
     || hardening_fail "UPSTREAM_COMMIT must be a full lowercase Git SHA"
 [[ "$UPSTREAM_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] \
     || hardening_fail "invalid UPSTREAM_VERSION: ${UPSTREAM_VERSION}"
-[[ "$HARDENED_REVISION" =~ ^[1-9][0-9]*$ ]] \
-    || hardening_fail "HARDENED_REVISION must be a positive integer"
+[[ "$HARDENED_REVISION" =~ ^(0|[1-9][0-9]*)$ ]] \
+    || hardening_fail "HARDENED_REVISION must be a non-negative integer"
 
 git -C "$REPO_ROOT" cat-file -e "${UPSTREAM_COMMIT}^{commit}" 2>/dev/null \
     || hardening_fail "approved upstream commit is not present locally"
@@ -225,4 +225,4 @@ fi
 
 printf 'HARDENING CHECK OK\n'
 printf '  upstream: %s (%s)\n' "$UPSTREAM_COMMIT" "$UPSTREAM_VERSION"
-printf '  release:  v%s-hardened.%s\n' "$UPSTREAM_VERSION" "$HARDENED_REVISION"
+printf '  release:  %s\n' "$(hardening_release_tag)"
