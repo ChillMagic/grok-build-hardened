@@ -38,6 +38,8 @@ jobs:
           persist-credentials: false
       - name: Configure read-only upstream identity
         run: python3 scripts/hardening/hardening.py setup-remotes
+      - name: Test release helpers
+        run: python3 -m unittest discover -s scripts/hardening -p 'test_*.py'
       - name: Validate tag and hardening invariants
         id: release
         run: >-
@@ -53,6 +55,9 @@ jobs:
         include:
           - os: ubuntu-latest
             python: python3
+          - os: ubuntu-24.04-arm
+            python: python3
+            portable_arm64: true
           - os: macos-latest
             python: python3
           - os: windows-latest
@@ -68,6 +73,15 @@ jobs:
           persist-credentials: false
       - name: Configure read-only upstream identity
         run: ${{ matrix.python }} scripts/hardening/hardening.py setup-remotes
+      - name: Select portable Linux ARM64 build settings
+        if: matrix.portable_arm64 == true
+        shell: bash
+        run: |
+          {
+            printf 'RUSTFLAGS=-C target-cpu=generic -C force-unwind-tables=yes\n'
+            printf 'GROK_HARDENED_TARGET_DIR=target/hardened-aarch64-generic\n'
+            printf 'CARGO_BUILD_JOBS=3\n'
+          } >> "$GITHUB_ENV"
       - name: Install build prerequisites on Linux
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install --yes protobuf-compiler

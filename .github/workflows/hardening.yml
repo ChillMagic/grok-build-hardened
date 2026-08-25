@@ -30,6 +30,8 @@ jobs:
           persist-credentials: false
       - name: Configure read-only upstream identity
         run: python3 scripts/hardening/hardening.py setup-remotes
+      - name: Test hardening helpers
+        run: python3 -m unittest discover -s scripts/hardening -p 'test_*.py'
       - name: Verify hardening invariants
         run: python3 scripts/hardening/hardening.py check
 

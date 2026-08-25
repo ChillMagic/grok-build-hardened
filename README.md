@@ -56,9 +56,11 @@ Linux, or `target/hardened/release/xai-grok-pager.exe` on Windows. The build
 script does not install it and the binary cannot update itself.
 
 Windows, macOS, and Linux use the same Python hardening implementation. CI
-checks all three operating systems; release artifacts are built separately
-for each target. Windows releases are `.zip` files containing `grok.exe`;
-macOS and Linux releases are `.tar.gz` files containing `grok`.
+checks all three operating systems. Each release contains Windows x86_64,
+macOS aarch64, Linux x86_64, and Linux aarch64 artifacts. Linux ARM64 is built
+natively with the generic AArch64 instruction set rather than the upstream
+Neoverse-specific default. Windows releases are `.zip` files containing
+`grok.exe`; macOS and Linux releases are `.tar.gz` files containing `grok`.
 
 ## Track upstream safely
 

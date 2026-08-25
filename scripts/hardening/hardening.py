@@ -171,6 +171,13 @@ PACKAGE_FILES = (
     "RELEASE.md",
 )
 
+RELEASE_ARCHIVE_TARGETS = (
+    ("linux", "x86_64", ".tar.gz"),
+    ("linux", "aarch64", ".tar.gz"),
+    ("macos", "aarch64", ".tar.gz"),
+    ("windows", "x86_64", ".zip"),
+)
+
 
 class HardeningError(RuntimeError):
     """A fail-closed hardening invariant was not satisfied."""
@@ -770,6 +777,26 @@ def sha256_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
+def collect_release_archives(output_dir: Path, version: str) -> list[Path]:
+    package_prefix = f"grok-build-hardened-{version}"
+    expected_names = {
+        f"{package_prefix}-{system}-{architecture}{suffix}"
+        for system, architecture, suffix in RELEASE_ARCHIVE_TARGETS
+    }
+    archives = sorted((*output_dir.glob("*.tar.gz"), *output_dir.glob("*.zip")))
+    actual_names = {path.name for path in archives}
+    if actual_names != expected_names:
+        missing = sorted(expected_names - actual_names)
+        unexpected = sorted(actual_names - expected_names)
+        details: list[str] = []
+        if missing:
+            details.append(f"missing: {', '.join(missing)}")
+        if unexpected:
+            details.append(f"unexpected: {', '.join(unexpected)}")
+        fail(f"release archive set mismatch ({'; '.join(details)})")
+    return archives
+
+
 def publish_github_release(
     metadata: Mapping[str, str],
     tag: str,
@@ -793,13 +820,7 @@ def publish_github_release(
     if not output_dir.is_absolute():
         output_dir = REPO_ROOT / output_dir
     output_dir = output_dir.resolve()
-    archives = sorted((*output_dir.glob("*.tar.gz"), *output_dir.glob("*.zip")))
-    if len(archives) != 3:
-        fail(f"expected three platform archives, found {len(archives)}")
-    for platform_label in ("linux", "macos", "windows"):
-        matches = [path for path in archives if f"-{platform_label}-" in path.name]
-        if len(matches) != 1:
-            fail(f"expected one {platform_label} archive, found {len(matches)}")
+    archives = collect_release_archives(output_dir, version)
 
     notes_file = Path(notes_file_value)
     if not notes_file.is_absolute():
